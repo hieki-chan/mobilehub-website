@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
   if (!isFormData) {
     config.headers["Content-Type"] = "application/json";
   } else {
-    delete config.headers["Content-Type"]; // để axios tự set boundary cho multipart
+    delete config.headers["Content-Type"]; 
   }
 
   return config;
