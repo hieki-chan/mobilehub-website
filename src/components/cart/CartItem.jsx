@@ -10,7 +10,7 @@ export default function CartItem({ item, loading, remove, updateQty, updateVaria
   const finalPrice = useMemo(() => {
     if (!selectedVariant) return 0
     const discounted = selectedVariant.price * (1 - (item.discountInPercent || 0) / 100)
-    return Math.round(discounted)
+    return discounted
   }, [selectedVariant, item.discountInPercent])
 
   const subtotal = useMemo(() => (finalPrice * (item.quantity || 1)), [finalPrice, item.quantity])

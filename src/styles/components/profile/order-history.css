@@ -1,0 +1,249 @@
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-card {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    background: #fafafa;
+    transition: box-shadow .2s ease;
+}
+
+.order-card:hover {
+    box-shadow: var(--shadow);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order-id {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.order-date {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.order-status {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-confirmed {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-shipping {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.status-delivered {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.order-item-preview {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.order-item-preview img {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.order-item-info {
+    flex: 1;
+}
+
+.order-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.order-item-meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.order-item-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--brand-primary);
+}
+
+.order-more-items {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.order-total {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 16px;
+}
+
+.order-total strong {
+    color: var(--brand-primary);
+    font-size: 18px;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.order-detail-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.order-detail-modal h3 {
+    margin: 0 0 20px;
+    font-size: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding-bottom: 12px;
+}
+
+.order-detail-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.order-detail-section:last-child {
+    border-bottom: none;
+}
+
+.order-detail-section h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.order-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.order-detail-row span:first-child {
+    color: var(--muted);
+}
+
+.order-detail-total {
+    font-size: 16px;
+    font-weight: 700;
+    padding-top: 12px;
+    border-top: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.order-detail-total strong {
+    color: var(--brand-primary);
+    font-size: 20px;
+}
+
+.order-detail-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.order-detail-item img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.order-detail-item-info {
+    flex: 1;
+}
+
+.order-detail-item-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.order-detail-item-meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+
+.order-detail-item-price {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand-primary);
+}

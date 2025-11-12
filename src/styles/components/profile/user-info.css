@@ -1,0 +1,26 @@
+.profile-content h3 {
+    margin: 0 0 20px;
+    font-size: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding-bottom: 12px;
+}
+
+.profile-content h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 16px 0 12px;
+    color: var(--text);
+}
+
+.field-error {
+    color: var(--brand-primary);
+    font-size: 12px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+.required {
+    color: var(--brand-primary);
+    margin-left: 2px;
+}

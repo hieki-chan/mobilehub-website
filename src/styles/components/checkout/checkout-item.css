@@ -1,0 +1,87 @@
+.list__item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.list__item:last-child {
+  border-bottom: none;
+}
+
+.thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.item__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item__name {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item__meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.item__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.qtybtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ring);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.qtybtn:hover {
+  background: #f9fafb;
+}
+
+.item__qty {
+  width: 40px;
+  text-align: center;
+}
+
+.remove {
+  margin-left: 8px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.remove:hover {
+  color: var(--danger);
+}
+
+.item__price {
+  text-align: right;
+}
+
+.item__price-current {
+  margin: 0;
+  font-weight: 700;
+}
+
+.item__price-old {
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-size: 12px;
+}

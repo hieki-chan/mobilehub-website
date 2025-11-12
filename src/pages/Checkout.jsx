@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import useCart from '../hooks/useCart'
+import CheckoutItems from '../components/checkout/CheckoutItems'
 import { formatPrice } from '../utils/formatPrice'
 import '../styles/pages/checkout.css'
 
@@ -27,11 +28,30 @@ export default function Checkout() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
+  const location = useLocation()
+  const selectedItems = location.state?.selectedItems || []
+
+  const checkoutItems = selectedItems.length
+    ? cart.filter(item => selectedItems.includes(item.id))
+    : []
+
+  const cartSubtotal = checkoutItems.reduce((sum, item) => {
+    const selectedVariant =
+      item.variants?.find(v => v.id === item.variantId) || item.variants?.[0]
+    if (!selectedVariant) return sum
+
+    const discountedPrice =
+      selectedVariant.price * (1 - (item.discountInPercent || 0) / 100)
+    const qty = Number(item.quantity || 1)
+
+    return sum + discountedPrice * qty
+  }, 0)
+
   useEffect(() => {
-    // Nếu giỏ hàng trống, chuyển về trang chủ
-    // if (!cart || cart.length === 0) {
-    //   navigate('/')
-    // }
+    //Nếu giỏ hàng trống, chuyển về trang chủ
+    if (!selectedItems || selectedItems.length === 0) {
+      navigate('/')
+    }
 
     // Lấy thông tin user nếu đã đăng nhập
     const userStr = localStorage.getItem('user')
@@ -187,21 +207,21 @@ export default function Checkout() {
     }, 1500)
   }
 
-  // Tính toán chi tiết
-  const cartSubtotal = cart.reduce((sum, item) => {
-    const price = Number(item.price) || 0
-    const qty = Number(item.qty) || 1
-    return sum + (price * qty)
-  }, 0)
 
   const shippingFee = formData.shippingMethod === 'express' ? 50000 : 0
   const finalTotal = cartSubtotal + shippingFee
 
-  const getItemTotal = (item) => {
-    const price = Number(item.price) || 0
-    const qty = Number(item.qty) || 1
-    return price * qty
-  }
+const getItemTotal = (item) => {
+  const selectedVariant =
+    item.variants?.find(v => v.id === item.variantId) || item.variants?.[0]
+  if (!selectedVariant) return 0
+
+  const discountedPrice =
+    selectedVariant.price * (1 - (item.discountInPercent || 0) / 100)
+  const qty = Number(item.quantity || 1)
+  return discountedPrice * qty
+}
+
 
   return (
     <main className="checkout-container">
@@ -288,7 +308,7 @@ export default function Checkout() {
                     name="districtCode"
                     value={formData.districtCode}
                     onChange={handleChange}
-                    disabled={!formData.cityCode || districts.length === 0} 
+                    disabled={!formData.cityCode || districts.length === 0}
                   >
                     <option value="">Chọn Quận/Huyện</option>
                     {/* Lặp qua danh sách Districts đã được lọc */}
@@ -306,7 +326,7 @@ export default function Checkout() {
                     name="wardCode"
                     value={formData.wardCode}
                     onChange={handleChange}
-                    disabled={!formData.districtCode || wards.length === 0} 
+                    disabled={!formData.districtCode || wards.length === 0}
                   >
                     <option value="">Chọn Phường/Xã</option>
                     {/* Lặp qua danh sách Wards đã được lọc */}
@@ -402,22 +422,7 @@ export default function Checkout() {
           <div className="order-summary">
             <h3>Đơn hàng của bạn</h3>
 
-            <div className="summary-items">
-              {cart.map((item, idx) => (
-                <div key={idx} className="summary-item">
-                  <img src={item.image || '/no-image.png'} alt={item.name} />
-                  <div className="summary-item-info">
-                    <div className="summary-item-name">{item.name}</div>
-                    {item.capacity && <div className="muted">{item.capacity}</div>}
-                    {item.color && <div className="muted">{item.color}</div>}
-                    <div className="muted">SL: {item.qty}</div>
-                  </div>
-                  <div className="summary-item-price">
-                    {formatPrice(getItemTotal(item))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CheckoutItems items={checkoutItems} />
 
             <div className="summary-divider"></div>
 

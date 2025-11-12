@@ -1,19 +1,45 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useCart from '../hooks/useCart'
 import { formatPrice } from '../utils/formatPrice'
 import CartItem from '../components/cart/CartItem'
 import '../styles/pages/cart.css'
-
 import { getText } from 'number-to-text-vietnamese'
 
 export default function Cart() {
   const navigate = useNavigate()
-  const { cart, remove, updateQty, updateVariant, clear, total, count, loading, error } = useCart()
+  const { cart, remove, updateQty, updateVariant, clear, loading, error } = useCart()
+  const [selectedItems, setSelectedItems] = useState([])
 
   useEffect(() => {
     document.title = 'Giỏ hàng | MobileHub'
   }, [])
+
+  const toggleSelect = (itemId) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === cart.length) setSelectedItems([])
+    else setSelectedItems(cart.map((item) => item.id))
+  }
+
+  const selectedTotal = cart
+    .filter((item) => selectedItems.includes(item.id))
+    .reduce((sum, item) => {
+      const variant = item.variants?.find((v) => v.id === item.variantId)
+      if (!variant) return sum
+      const price = variant.price * (1 - (item.discountInPercent || 0) / 100)
+      return sum + price * (item.quantity || 1)
+    }, 0)
+
+  const cartTotal = Math.round(selectedTotal * 100) / 100
+
+  function checkout() {
+    navigate('/checkout', { state: { selectedItems } })
+  }
 
   if (error) {
     return (
@@ -43,44 +69,59 @@ export default function Cart() {
     )
   }
 
-  const cartTotal = total()
-  const cartCount = count()
-
   let totalInWords = ''
   const [intPart, decimalPart] = cartTotal.toString().split('.')
-
   totalInWords = getText(parseInt(intPart))
-
   if (decimalPart && parseInt(decimalPart) > 0) {
     const decimalText = decimalPart
       .split('')
-      .map(d => getText(parseInt(d)))
+      .map((d) => getText(parseInt(d)))
       .join(' ')
     totalInWords += ' phẩy ' + decimalText
   }
-
-  const totalInWordsFormatted = totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
+  const totalInWordsFormatted = totalInWords
+    ? totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
+    : 'Không có sản phẩm nào được chọn'
 
   return (
     <main className="cart-container" style={{ padding: 20, position: 'relative' }}>
-      <h3 className="section-title">Giỏ hàng ({cartCount} sản phẩm)</h3>
+      <h3 className="section-title">Giỏ hàng ({cart.length} sản phẩm)</h3>
+
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={selectedItems.length === cart.length}
+            onChange={toggleSelectAll}
+            style={{ marginRight: 8 }}
+          />
+          Chọn tất cả
+        </label>
+      </div>
 
       <div className="cart-items">
-        {cart.map(item => (
-          <CartItem
-            key={item.id}
-            item={item}
-            loading={loading}
-            remove={remove}
-            updateQty={updateQty}
-            updateVariant={updateVariant}
-          />
+        {cart.map((item) => (
+          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input
+              type="checkbox"
+              checked={selectedItems.includes(item.id)}
+              onChange={() => toggleSelect(item.id)}
+              style={{ width: 18, height: 18 }}
+            />
+            <CartItem
+              item={item}
+              loading={loading}
+              remove={remove}
+              updateQty={updateQty}
+              updateVariant={updateVariant}
+            />
+          </div>
         ))}
 
         <div className="cart-summary-wrapper">
           <div className="cart-summary">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div className="muted">Tạm tính</div>
+              <div className="muted">Tạm tính ({selectedItems.length} sản phẩm được chọn)</div>
               <div>{formatPrice(cartTotal)}</div>
             </div>
 
@@ -102,8 +143,8 @@ export default function Cart() {
               <button
                 className="btn btn-primary btn-xl"
                 style={{ width: '100%', height: '40px' }}
-                disabled={loading || cart.length === 0}
-                onClick={() => navigate('/checkout')}
+                disabled={loading || selectedItems.length === 0}
+                onClick={checkout}
               >
                 {loading ? 'Đang xử lý...' : `Thanh toán (${formatPrice(cartTotal)})`}
               </button>
