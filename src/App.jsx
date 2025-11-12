@@ -13,6 +13,7 @@ import SearchResults from "./pages/SearchResults";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import Installment from "./pages/Installment";
+import NotFound from "./pages/NotFound";  
 import { verifyToken, logout } from "./api/AuthApi";
 
 export default function App() {
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/installment" element={<Installment />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
       {!hideFooter && <Footer />}
