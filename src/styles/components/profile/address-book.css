@@ -1,103 +1,46 @@
 .address-book {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 20px
 }
 
 .address-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-}
-
-.address-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.address-item {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    padding-bottom: 16px;
-}
-
-.address-name {
-    font-weight: 600;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.address-name .divider {
-    color: var(--muted);
-}
-
-.address-text {
-    color: #555;
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.badge-default {
-    border: 1px solid #e11d48;
-    color: #e11d48;
-    font-size: 12px;
-    padding: 1px 6px;
-    border-radius: 4px;
-}
-
-.address-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.address-actions .link {
-    background: none;
-    border: none;
-    color: #2563eb;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.address-actions .link:hover {
-    text-decoration: underline;
-}
-
-.address-actions .btn-light {
-    background: #f5f5f5;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
-    cursor: pointer;
+    margin-bottom: 12px
 }
 
 .address-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: 10px;
+    margin-top: 10px
 }
 
 .address-form label {
     display: flex;
     flex-direction: column;
     font-size: 14px;
-    gap: 6px;
+    gap: 6px
 }
 
 .address-form input,
 .address-form textarea {
     padding: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 6px
 }
 
 .address-form .actions {
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 10px
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-size: 15px
 }

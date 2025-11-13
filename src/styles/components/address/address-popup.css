@@ -1,0 +1,114 @@
+.addr-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000
+}
+
+.addr-popup-box {
+  width: 560px;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column
+}
+
+.addr-popup-header {
+  padding: 18px 20px;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #f2f2f2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center
+}
+
+.close-btn {
+  border: none;
+  background: none;
+  font-size: 28px;
+  cursor: pointer;
+  opacity: .6
+}
+
+.addr-popup-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px
+}
+
+.addr-popup-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f2f2f2
+}
+
+.addr-radio {
+  margin-top: 6px;
+  width: 18px;
+  height: 18px;
+  accent-color: #d6001c;
+  cursor: pointer
+}
+
+.addr-info {
+  flex: 1;
+  cursor: pointer
+}
+
+.addr-info .name {
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  gap: 8px;
+  align-items: center
+}
+
+.addr-info .text {
+  font-size: 14px;
+  margin-top: 4px;
+  line-height: 1.4;
+  color: #555
+}
+
+.addr-update {
+  font-size: 14px;
+  color: #1677ff;
+  cursor: pointer;
+  padding: 4px 6px;
+  white-space: nowrap
+}
+
+.default-badge {
+  border: 1px solid #d6001c;
+  color: #d6001c;
+  padding: 1px 6px;
+  font-size: 11px;
+  border-radius: 4px
+}
+
+.addr-add-btn {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px
+}
+
+.addr-add-btn:hover {
+  background: #fafafa
+}

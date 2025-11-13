@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import AddressForm from './AddressForm'
+import AddressList from '../address/AddressList'
+import AddressForm from '../address/AddressForm'
 import {
   getAddresses,
   createAddress,
@@ -14,6 +15,7 @@ export default function AddressBook() {
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,7 +23,7 @@ export default function AddressBook() {
         const res = await getAddresses()
         setAddresses(res || [])
       } catch (err) {
-        console.error('Lỗi tải địa chỉ:', err)
+        setError("Không thể tải danh sách địa chỉ. Vui lòng thử lại.")
       } finally {
         setLoading(false)
       }
@@ -29,36 +31,42 @@ export default function AddressBook() {
     fetchData()
   }, [])
 
-  const handleAddNew = () => {
-    setEditing(null)
-    setShowForm(true)
-  }
-
   const handleEdit = (address) => {
     setEditing(address)
     setShowForm(true)
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Xóa địa chỉ này?')) return
+    try {
+      const res = await deleteAddress(id)
+      setAddresses(prev =>
+        prev.filter(a => a.id !== id).map(a => ({
+          ...a,
+          isDefault: a.id === res.defaultAddressId
+        }))
+      )
+    } catch (err) {}
+  }
+
   const handleDefault = async (id) => {
     try {
       await setDefaultAddress(id)
-
       setAddresses(prev =>
-        prev.map(a => ({
-          ...a,
-          isDefault: a.id === id
-        }))
+        prev.map(a => ({ ...a, isDefault: a.id === id }))
       )
-    } catch (err) {
-      console.error('Lỗi cập nhật địa chỉ mặc định:', err)
-    }
+    } catch {}
+  }
+
+  const handleAddNew = () => {
+    setEditing(null)
+    setShowForm(true)
   }
 
   const handleSave = async (data) => {
     try {
       if (editing) {
         const updated = await updateAddress(editing.id, data)
-
         setAddresses(prev => {
           if (updated.isDefault) {
             return prev.map(a =>
@@ -67,53 +75,34 @@ export default function AddressBook() {
                 : { ...a, isDefault: false }
             )
           }
-
           return prev.map(a => (a.id === editing.id ? updated : a))
         })
-
       } else {
         const created = await createAddress(data)
         setAddresses(prev => {
           if (created.isDefault) {
-            return [
-              ...prev.map(a => ({ ...a, isDefault: false })),
-              created
-            ]
+            return [...prev.map(a => ({ ...a, isDefault: false })), created]
           }
           return [...prev, created]
         })
       }
-
       setShowForm(false)
-
-    } catch (err) {
-      console.error('Lỗi lưu địa chỉ:', err)
-    }
-  }
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Xóa địa chỉ này?')) return
-    try {
-      const res = await deleteAddress(id)
-      setAddresses(prev =>
-        prev
-          .filter(a => a.id !== id)
-          .map(a => ({
-            ...a,
-            isDefault: a.id === res.defaultAddressId
-          }))
-      )
-
-    } catch (err) {
-      console.error('Lỗi xóa địa chỉ:', err)
-    }
+    } catch {}
   }
 
   if (loading) {
     return (
       <div className="address-book">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <i className="fa fa-spinner fa-spin"></i> Đang tải địa chỉ...
+        <div style={{ textAlign: 'center', padding: 40 }}>Đang tải...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="address-book">
+        <div style={{ textAlign: 'center', padding: 40, color: 'red' }}>
+          {error}
         </div>
       </div>
     )
@@ -124,51 +113,26 @@ export default function AddressBook() {
       <div className="address-header">
         <h3>Địa chỉ của tôi</h3>
         <button className="btn btn-primary" onClick={handleAddNew}>
-          <i className="fa fa-plus"></i> Thêm địa chỉ mới
+          Thêm địa chỉ
         </button>
       </div>
 
       {addresses.length === 0 ? (
-        <div className="empty-state">
-          <i className="fa fa-map-marker-alt"></i>
-          <div>Bạn chưa có địa chỉ nào</div>
-        </div>
+        <div className="empty-state">Bạn chưa có địa chỉ nào.</div>
       ) : (
-        <div className="address-list">
-          {addresses.map((a) => (
-            <div key={a.id} className="address-item">
-              <div className="address-main">
-                <div className="address-name">
-                  <strong>{a.fullName}</strong>
-                  <span className="divider">|</span>
-                  <span>{a.phoneNumber}</span>
-                  {a.isDefault && <span className="badge-default">Mặc định</span>}
-                </div>
-                <div className="address-text">
-                  {[a.addressDetail, a.ward, a.district, a.province].filter(Boolean).join(', ')}
-                </div>
-              </div>
-              <div className="address-actions">
-                <button className="link" onClick={() => handleEdit(a)}>Cập nhật</button>
-                <button className="link" onClick={() => handleDelete(a.id)}>Xóa</button>
-                {!a.isDefault && (
-                  <>
-                    <button className="btn btn-light" onClick={() => handleDefault(a.id)}>
-                      Thiết lập mặc định
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <AddressList
+          addresses={addresses}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onDefault={handleDefault}
+        />
       )}
 
       {showForm && (
         <AddressForm
-          onClose={() => setShowForm(false)}
-          onSave={handleSave}
           initial={editing}
+          onSave={handleSave}
+          onClose={() => setShowForm(false)}
         />
       )}
     </div>

@@ -1,158 +1,202 @@
-.profile-page {
-  max-width: var(--container-max);
-  margin: 18px auto;
-  padding: 0 20px 40px;
+.checkout-wrap {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr 340px;
+  gap: 30px
 }
 
-.profile-sidebar {
+.checkout-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px
+}
+
+.checkout-left {
   background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 12px;
-  align-self: start;
-  position: sticky;
-  top: calc(var(--topbar-h) + var(--menubar-h) + 18px);
+  padding: 20px;
+  border-radius: 10px
 }
 
-.profile-sidebar .welcome {
-  padding: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 8px;
+.checkout-right {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  height: max-content
 }
 
-.profile-sidebar .welcome strong {
-  font-size: 16px;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.checkout-address {
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px
 }
 
-.profile-sidebar .welcome .muted {
-  font-size: 14px;
+.address-label {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px
 }
 
-.profile-nav {
-  list-style: none;
+.address-box {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #eee
 }
 
-.profile-nav li button {
+.address-box .name {
+  font-weight: 600;
+  font-size: 15px
+}
+
+.address-box .text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4
+}
+
+.checkout-default-badge {
+  border: 1px solid #d6001c;
+  color: #d6001c;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 8px
+}
+
+.change-btn,
+.select-btn {
+  width: fit-content;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: #d6001c;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px
+}
+
+.change-btn:hover,
+.select-btn:hover {
+  text-decoration: underline
+}
+
+.ship-box,
+.pay-box {
+  margin-top: 30px
+}
+
+.ship-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px
+}
+
+.ship-option,
+.pay-option {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 14px 12px;
+  border: 1px solid #eee;
+  padding: 12px;
   border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer
+}
+
+.ship-option input,
+.pay-option input {
+  transform: scale(1.2)
+}
+
+.ship-info {
+  flex: 1
+}
+
+.ship-name {
+  font-weight: 600
+}
+
+.ship-desc {
+  font-size: 13px;
+  color: #888
+}
+
+.ship-price {
+  font-weight: 600
+}
+
+.pay-name {
+  font-weight: 600
+}
+
+.summary-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 15px
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 15px 0
+}
+
+.btn-checkout {
+  width: 100%;
+  background: #d6001c;
+  color: #fff;
+  padding: 14px;
   border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: left;
-  color: var(--text);
-  transition: background .2s ease, color .2s ease;
-}
-
-.profile-nav li button i {
-  color: var(--muted);
-  width: 20px;
-  text-align: center;
-}
-
-.profile-nav li button:hover {
-  background: #f5f5f5;
-}
-
-.profile-nav li button.active {
-  background: #fff3f3;
-  color: var(--brand-primary);
-}
-
-.profile-nav li button.active i {
-  color: var(--brand-primary);
-}
-
-.profile-nav li button.logout {
-  color: var(--muted);
-}
-
-.profile-nav li button.logout:hover {
-  background: #f5f5f5;
-  color: var(--brand-primary);
-}
-
-.profile-content {
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 24px;
-  min-height: 400px;
-}
-
-.loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  color: var(--muted);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--muted);
-}
-
-.empty-state i {
-  font-size: 48px;
-  margin-bottom: 16px;
-  color: var(--muted);
-}
-
-.empty-state div {
+  border-radius: 6px;
   font-size: 16px;
-  margin-bottom: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px
+}
+
+.btn-checkout:disabled {
+  opacity: .6
+}
+
+.btn-back {
+  width: 100%;
+  background: #f3f3f3;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-top: 10px;
+  cursor: pointer
+}
+
+.checkout-left,
+.checkout-right {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .05)
 }
 
 @media(max-width:760px) {
-  .profile-page {
-    grid-template-columns: 1fr;
-    padding: 0 12px 20px;
+  .checkout-wrap {
+    grid-template-columns: 1fr
   }
 
-  .profile-sidebar {
-    position: static;
-    padding: 8px;
-  }
-
-  .profile-nav {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  .profile-nav li {
-    flex-shrink: 0;
-  }
-
-  .profile-nav li button {
-    flex-direction: column;
-    font-size: 13px;
-    gap: 6px;
-    padding: 10px;
-  }
-
-  .profile-content {
-    padding: 16px;
+  .checkout-right {
+    margin-top: 20px
   }
 }

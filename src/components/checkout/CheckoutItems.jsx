@@ -1,5 +1,6 @@
 import React from 'react'
 import { formatPrice } from '../../utils/formatPrice'
+import '../../styles/components/checkout/checkout-item.css'
 
 export default function CheckoutItems({ items = [] }) {
   if (!items.length) {

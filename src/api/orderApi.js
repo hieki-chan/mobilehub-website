@@ -1,14 +1,22 @@
-import api from "./api" // đường dẫn đúng tới file api.js bạn đã tạo
+import api from "./api"
 
-const BASE_URL = "/carts";
+const BASE_URL = "/orders"
+
+const getUserId = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}").id
+  } catch {
+    return null
+  }
+}
 
 export const createOrder = async (orderData) => {
   try {
-    const response = await api.post(`/${BASE_URL}`, orderData)
+    const userId = getUserId()
+    const response = await api.post(`${BASE_URL}/users/${userId}`, orderData)
     return response.data
   } catch (error) {
     console.error("Lỗi khi tạo đơn hàng:", error)
     throw error.response?.data || error
   }
 }
-

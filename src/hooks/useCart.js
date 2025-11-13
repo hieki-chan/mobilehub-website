@@ -14,7 +14,7 @@ export default function useCart() {
       const res = await CartApi.getCart(userId)
       const items = res?.items || []
       setCart(items)
-      console.log(items);
+      //console.log(items);
     } catch (err) {
       setError(err?.message || 'Lỗi khi tải giỏ hàng')
     } finally {
