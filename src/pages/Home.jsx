@@ -3,7 +3,7 @@ import ProductCard from "../components/home/ProductCard";
 import { useNavigate } from "react-router-dom";
 import QuickViewModal from "../components/home/QuickViewModal";
 import { formatPrice } from "../utils/formatPrice";
-import { fetchProducts } from "../api/ProductApi";
+import { fetchProducts } from "../api/productApi";
 import "../styles/pages/home.css";
 
 export default function Home() {

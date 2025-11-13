@@ -1,60 +1,122 @@
 import React, { useState, useEffect } from 'react'
 import AddressForm from './AddressForm'
+import {
+  getAddresses,
+  createAddress,
+  setDefaultAddress,
+  updateAddress,
+  deleteAddress
+} from '../../api/addressApi'
 import '../../styles/components/profile/address-book.css'
 
 export default function AddressBook() {
   const [addresses, setAddresses] = useState([])
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ fullName: '', phone: '', address: '' })
   const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('addresses') || '[]')
-    setAddresses(stored)
+    const fetchData = async () => {
+      try {
+        const res = await getAddresses()
+        setAddresses(res || [])
+      } catch (err) {
+        console.error('Lỗi tải địa chỉ:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
-  const saveToStorage = (list) => {
-    localStorage.setItem('addresses', JSON.stringify(list))
-    setAddresses(list)
-  }
-
   const handleAddNew = () => {
-    setForm({ fullName: '', phone: '', address: '' })
     setEditing(null)
     setShowForm(true)
   }
 
-  const handleEdit = (idx) => {
-    setForm(addresses[idx])
-    setEditing(idx)
+  const handleEdit = (address) => {
+    setEditing(address)
     setShowForm(true)
   }
 
-  const handleDelete = (idx) => {
+  const handleDefault = async (id) => {
+    try {
+      await setDefaultAddress(id)
+
+      setAddresses(prev =>
+        prev.map(a => ({
+          ...a,
+          isDefault: a.id === id
+        }))
+      )
+    } catch (err) {
+      console.error('Lỗi cập nhật địa chỉ mặc định:', err)
+    }
+  }
+
+  const handleSave = async (data) => {
+    try {
+      if (editing) {
+        const updated = await updateAddress(editing.id, data)
+
+        setAddresses(prev => {
+          if (updated.isDefault) {
+            return prev.map(a =>
+              a.id === updated.id
+                ? { ...updated, isDefault: true }
+                : { ...a, isDefault: false }
+            )
+          }
+
+          return prev.map(a => (a.id === editing.id ? updated : a))
+        })
+
+      } else {
+        const created = await createAddress(data)
+        setAddresses(prev => {
+          if (created.isDefault) {
+            return [
+              ...prev.map(a => ({ ...a, isDefault: false })),
+              created
+            ]
+          }
+          return [...prev, created]
+        })
+      }
+
+      setShowForm(false)
+
+    } catch (err) {
+      console.error('Lỗi lưu địa chỉ:', err)
+    }
+  }
+
+  const handleDelete = async (id) => {
     if (!window.confirm('Xóa địa chỉ này?')) return
-    const updated = addresses.filter((_, i) => i !== idx)
-    saveToStorage(updated)
+    try {
+      const res = await deleteAddress(id)
+      setAddresses(prev =>
+        prev
+          .filter(a => a.id !== id)
+          .map(a => ({
+            ...a,
+            isDefault: a.id === res.defaultAddressId
+          }))
+      )
+
+    } catch (err) {
+      console.error('Lỗi xóa địa chỉ:', err)
+    }
   }
 
-  const handleDefault = (idx) => {
-    const updated = addresses.map((a, i) => ({ ...a, isDefault: i === idx }))
-    saveToStorage(updated)
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!form.fullName.trim() || !form.phone.trim() || !form.address.trim()) {
-      alert('Vui lòng nhập đầy đủ thông tin!')
-      return
-    }
-    let updated
-    if (editing !== null) {
-      updated = addresses.map((a, i) => i === editing ? { ...a, ...form } : a)
-    } else {
-      updated = [...addresses, { ...form, isDefault: addresses.length === 0 }]
-    }
-    saveToStorage(updated)
-    setShowForm(false)
+  if (loading) {
+    return (
+      <div className="address-book">
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <i className="fa fa-spinner fa-spin"></i> Đang tải địa chỉ...
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -73,23 +135,27 @@ export default function AddressBook() {
         </div>
       ) : (
         <div className="address-list">
-          {addresses.map((a, idx) => (
-            <div key={idx} className="address-item">
+          {addresses.map((a) => (
+            <div key={a.id} className="address-item">
               <div className="address-main">
                 <div className="address-name">
                   <strong>{a.fullName}</strong>
                   <span className="divider">|</span>
-                  <span>{a.phone}</span>
+                  <span>{a.phoneNumber}</span>
                   {a.isDefault && <span className="badge-default">Mặc định</span>}
                 </div>
-                <div className="address-text">{a.address}</div>
+                <div className="address-text">
+                  {[a.addressDetail, a.ward, a.district, a.province].filter(Boolean).join(', ')}
+                </div>
               </div>
               <div className="address-actions">
-                <button className="link" onClick={() => handleEdit(idx)}>Cập nhật</button>
+                <button className="link" onClick={() => handleEdit(a)}>Cập nhật</button>
+                <button className="link" onClick={() => handleDelete(a.id)}>Xóa</button>
                 {!a.isDefault && (
                   <>
-                    <button className="link" onClick={() => handleDelete(idx)}>Xóa</button>
-                    <button className="btn btn-light" onClick={() => handleDefault(idx)}>Thiết lập mặc định</button>
+                    <button className="btn btn-light" onClick={() => handleDefault(a.id)}>
+                      Thiết lập mặc định
+                    </button>
                   </>
                 )}
               </div>
@@ -101,18 +167,8 @@ export default function AddressBook() {
       {showForm && (
         <AddressForm
           onClose={() => setShowForm(false)}
-          onSave={(data) => {
-            let updated
-            if (editing !== null) {
-              updated = addresses.map((a, i) => i === editing ? data : a)
-            } else {
-              updated = [...addresses, { ...data, isDefault: addresses.length === 0 }]
-            }
-            localStorage.setItem('addresses', JSON.stringify(updated))
-            setAddresses(updated)
-            setShowForm(false)
-          }}
-          initial={editing !== null ? addresses[editing] : null}
+          onSave={handleSave}
+          initial={editing}
         />
       )}
     </div>

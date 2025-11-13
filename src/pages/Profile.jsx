@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../api/AuthApi'
+import { logout } from '../api/authApi'
 import useCart from '../hooks/useCart'
 import UserInfo from '../components/profile/UserInfo'
 import OrderHistory from '../components/profile/OrderHistory'
