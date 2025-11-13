@@ -11,7 +11,7 @@ import useCart from '../hooks/useCart'
 import useFav from '../hooks/useFav'
 import { formatPrice } from '../utils/formatPrice'
 import '../styles/pages/product-detail.css'
-import { getProductDetails } from '../api/ProductApi'
+import { getProductDetails } from '../api/productApi'
 import { getGroupedSpecs } from '../data/products'
 
 export default function ProductDetail() {

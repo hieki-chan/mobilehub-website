@@ -14,7 +14,7 @@ import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import Installment from "./pages/Installment";
 import NotFound from "./pages/NotFound";  
-import { verifyToken, logout } from "./api/AuthApi";
+import { verifyToken, logout } from "./api/authApi";
 
 export default function App() {
   const [isChecking, setIsChecking] = useState(true);
