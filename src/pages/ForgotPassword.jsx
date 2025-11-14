@@ -1,19 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { forgotPassword } from '../api/authApi'
 import '../styles/pages/login.css'
 
-// Mock forgot password function
-async function mockForgotPassword({ email }) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (!email || email.indexOf('@') === -1) {
-        return reject(new Error('Email không hợp lệ'))
-      }
-      // Giả lập gửi email thành công
-      resolve({ success: true, message: 'Đã gửi email khôi phục mật khẩu' })
-    }, 500)
-  })
-}
 
 export default function ForgotPassword() {
   const navigate = useNavigate()
@@ -29,11 +18,10 @@ export default function ForgotPassword() {
     setLoading(true)
     
     try {
-      await mockForgotPassword({ email: email.trim() })
+      await forgotPassword(email.trim())
       setSuccess(true)
       setLoading(false)
       
-      // Tự động chuyển về trang đăng nhập sau 3 giây
       setTimeout(() => {
         navigate('/login')
       }, 3000)
