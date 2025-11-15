@@ -82,19 +82,26 @@ export default function ProductGallery({ images = [] }) {
     const diff = currentX - startX
     const threshold = 100 // minimum drag distance
 
+    setIsDragging(false) // Enable transition
+
     if (diff > threshold) {
       // Dragged right -> previous image
-      prevImage()
+      const newIndex = (mainIndex - 1 + imgs.length) % imgs.length
+      setMainIndex(newIndex)
     } else if (diff < -threshold) {
       // Dragged left -> next image
-      nextImage()
+      const newIndex = (mainIndex + 1) % imgs.length
+      setMainIndex(newIndex)
+    } else {
+      // Not enough drag, snap back
+      setTranslateX(0)
     }
 
-    setIsDragging(false)
-    setTranslateX(0)
+    // Clean up drag state
     setStartX(0)
     setCurrentX(0)
   }
+  
 
   const handleMouseLeave = () => {
     if (isDragging) {
@@ -134,9 +141,9 @@ export default function ProductGallery({ images = [] }) {
           onClick={openZoom}
           style={{ cursor: 'zoom-in' }}
         >
-          <button className="nav prev" onClick={(e) => { e.stopPropagation(); prevImage(); }} aria-label="Ảnh trước">&lt;</button>
+          <button className="nav prev" onClick={(e) => { e.stopPropagation(); prevImage(); }} aria-label="Ảnh trước">‹</button>
           <img src={main} alt="" />
-          <button className="nav next" onClick={(e) => { e.stopPropagation(); nextImage(); }} aria-label="Ảnh tiếp">&gt;</button>
+          <button className="nav next" onClick={(e) => { e.stopPropagation(); nextImage(); }} aria-label="Ảnh tiếp">›</button>
           
           {/* Zoom indicator */}
           <div style={{
@@ -201,7 +208,7 @@ export default function ProductGallery({ images = [] }) {
               onClick={handleZoomNext}
               aria-label="Ảnh tiếp"
             >
-              ›
+              › 
             </button>
 
             {/* Main Image */}

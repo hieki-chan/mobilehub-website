@@ -39,13 +39,13 @@
   color: #fff;
   display: flex;
   justify-content: center;
-  align-items: center;
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: 30px;
   cursor: pointer;
   border: none;
   transition: background 0.2s;
   z-index: 2;
+  align-items: self-end;
 }
 
 .main-image .nav:hover {
@@ -188,6 +188,7 @@
   transition: all 0.2s;
   z-index: 10;
   line-height: 1;
+  align-items: normal;
 }
 
 .zoom-nav:hover {
