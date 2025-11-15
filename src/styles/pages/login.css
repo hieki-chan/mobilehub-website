@@ -60,7 +60,7 @@
   text-align: center;
 }
 
-.muted {
+ .login-card .muted {
   color: #6b7280;
   font-size: 15px;
   margin-bottom: 24px;
@@ -140,7 +140,7 @@ input:disabled {
 }
 
 /* Buttons */
-.btn {
+.login-form .btn {
   border: none;
   border-radius: 10px;
   cursor: pointer;
@@ -148,30 +148,32 @@ input:disabled {
   font-weight: 700;
   transition: all 0.2s ease;
   font-family: inherit;
+  height: 42px;
+  margin-top: 5px;
 }
 
-.btn.full {
+.login-form .btn.full {
   width: 100%;
   padding: 12px 0;
 }
 
-.btn-primary {
+.login-form .btn-primary {
   background: #dc2626;
   color: #fff;
   box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
 }
 
-.btn-primary:hover:not(:disabled) {
+.login-form .btn-primary:hover:not(:disabled) {
   background: #b91c1c;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(220, 38, 38, 0.3);
 }
 
-.btn-primary:active {
+.login-form .btn-primary:active {
   transform: translateY(0);
 }
 
-.btn-primary:disabled {
+.login-form .btn-primary:disabled {
   background: #9ca3af;
   cursor: not-allowed;
   box-shadow: none;

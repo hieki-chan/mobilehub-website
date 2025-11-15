@@ -7,7 +7,6 @@ import './styles/base/variables.css'
 import './styles/base/reset.css'
 import './styles/base/utilities.css'
 
-import './styles/components/header.css'
 import './styles/components/footer.css'
 import './styles/components/navigation.css'
 import './styles/components/buttons.css'

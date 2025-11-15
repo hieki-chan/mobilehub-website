@@ -2,6 +2,7 @@ import React from "react";
 import { FaFacebook, FaInstagram, FaTwitter, FaGithub } from "react-icons/fa";
 import "../styles/components/footer.css";
 
+
 export default function Footer() {
   return (
     <footer className="footer light">

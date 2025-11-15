@@ -104,9 +104,7 @@ export default function ProductDetail() {
       <ProductGallery images={galleryImages}/>
 
       <aside className="pdp-info" aria-label="Thông tin sản phẩm">
-        <div className="muted">
-          SKU: <strong id="skuVal">{selectedVariant.id}-{selectedVariant.color_label}</strong>
-        </div>
+        <div className="muted">SKU: <strong id="skuVal">{selectedVariant.id}-{selectedVariant.color_label}</strong></div>
 
         <h1 id="pTitle">{p.name}</h1>
 
