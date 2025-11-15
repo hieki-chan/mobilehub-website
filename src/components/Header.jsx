@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react' // Thêm useRef
 import { Link, useNavigate } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import useCart from '../hooks/useCart'
@@ -8,6 +8,11 @@ export default function Header() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [megaMenuOpen, setMegaMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+
+  // Refs cho timers
+  const megaMenuTimerRef = useRef(null);
+  const userMenuTimerRef = useRef(null); // Ref cho timer của user menu
 
   // ✅ FIX: Gọi hook NGOÀI try-catch theo React Rules of Hooks
   const cart = useCart()
@@ -102,6 +107,35 @@ export default function Header() {
     return user.name || user.email || 'Bạn'
   }
 
+  // --- Handlers cho User Menu (Thêm delay) ---
+  const handleUserMenuEnter = () => {
+    if (userMenuTimerRef.current) {
+      clearTimeout(userMenuTimerRef.current);
+    }
+    setIsUserMenuOpen(true);
+  };
+
+  const handleUserMenuLeave = () => {
+    userMenuTimerRef.current = setTimeout(() => {
+      setIsUserMenuOpen(false);
+    }, 200); // 200ms delay
+  };
+
+  // --- Handlers cho Mega Menu (Thêm delay) ---
+  const handleMegaMenuEnter = () => {
+    if (megaMenuTimerRef.current) {
+      clearTimeout(megaMenuTimerRef.current);
+    }
+    setMegaMenuOpen(true);
+  };
+
+  const handleMegaMenuLeave = () => {
+    megaMenuTimerRef.current = setTimeout(() => {
+      setMegaMenuOpen(false);
+    }, 200); // 200ms delay
+  };
+
+
   return (
     <>
       <header className="topbar" id="topbar" role="banner">
@@ -128,30 +162,61 @@ export default function Header() {
 
           <nav className="top-actions" aria-label="Tài khoản và giỏ hàng">
             {user ? (
-              <>
+              // Bọc nút "Xin chào" và dropdown trong một container
+              <div 
+                className="action-container user-menu-container"
+                onMouseEnter={handleUserMenuEnter} // Quay lại onHover
+                onMouseLeave={handleUserMenuLeave} // Quay lại onHover
+              >
                 <button 
                   className="action" 
-                  onClick={() => navigate('/profile')} 
+                  onClick={() => navigate('/profile')} // Giữ onClick để đi tới profile
                   title="Xem hồ sơ"
                   aria-label={`Xem hồ sơ của ${getUserDisplayName()}`}
+                  aria-haspopup="true"
+                  aria-expanded={isUserMenuOpen}
                 >
                   <i className="fa fa-user"></i>
                   <span className="action-label">
                     Xin chào, {getUserDisplayName()}
                   </span>
+                  {/* Thêm icon chevron */}
+                  <i className="fa fa-chevron-down" style={{ fontSize: '10px', marginLeft: '6px', opacity: 0.8 }}></i>
                 </button>
 
-                <button 
-                  className="action" 
-                  onClick={handleLogout} 
-                  title="Đăng xuất"
-                  aria-label="Đăng xuất"
-                >
-                  <i className="fa fa-right-from-bracket"></i>
-                  <span className="action-label">Đăng xuất</span>
-                </button>
-              </>
+                {/* Menu dropdown */}
+                {isUserMenuOpen && (
+                  <div 
+                    className="user-dropdown-menu" 
+                    role="menu"
+                    onMouseEnter={handleUserMenuEnter} // Thêm vào để giữ menu mở
+                    onMouseLeave={handleUserMenuLeave} // Thêm vào để đóng menu
+                  >
+                    <Link 
+                      to="/profile" 
+                      className="user-dropdown-item"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)} // Đóng menu khi click
+                    >
+                      <i className="fa fa-user-pen"></i>
+                      <span>Thông tin tài khoản</span>
+                    </Link>
+                    <button 
+                      className="user-dropdown-item logout" 
+                      onClick={() => {
+                        handleLogout();
+                        setIsUserMenuOpen(false); 
+                      }}
+                      role="menuitem"
+                    >
+                      <i className="fa fa-right-from-bracket"></i>
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
+              // Giữ nguyên logic khi chưa đăng nhập
               <Link 
                 to="/login" 
                 className="action" 
@@ -185,8 +250,8 @@ export default function Header() {
           <ul className="menu" role="menubar" aria-label="Danh mục">
             <li 
               className="menu-item-with-submenu"
-              onMouseEnter={() => setMegaMenuOpen(true)}
-              onMouseLeave={() => setMegaMenuOpen(false)}
+              onMouseEnter={handleMegaMenuEnter} // Giữ nguyên hover + delay
+              onMouseLeave={handleMegaMenuLeave} // Giữ nguyên hover + delay
             >
               <div className="nav-item-wrapper">
                 <Link to="/search?q=Điện thoại" className="nav-item">
@@ -198,8 +263,8 @@ export default function Header() {
                 {megaMenuOpen && (
                   <div 
                     className="mega-menu"
-                    onMouseEnter={() => setMegaMenuOpen(true)}
-                    onMouseLeave={() => setMegaMenuOpen(false)}
+                    onMouseEnter={handleMegaMenuEnter} // Giữ nguyên hover + delay
+                    onMouseLeave={handleMegaMenuLeave} // Giữ nguyên hover + delay
                   >
                     <div className="mega-menu-content">
                       <div className="mega-menu-section">

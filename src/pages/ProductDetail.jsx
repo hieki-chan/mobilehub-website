@@ -68,9 +68,12 @@ export default function ProductDetail() {
       await add({
         productId: p.id,
         variantId: selectedVariant.id,
-        quantity: qty
+        quantity: qty,
+        capacity: storageCap, // Thêm cho nhất quán
+        color: color         // Thêm cho nhất quán
       })
-      alert('Đã thêm vào giỏ hàng')
+      // alert('Đã thêm vào giỏ hàng') // <<< ĐÃ XÓA DÒNG NÀY
+      navigate('/cart') // <<< THÊM DÒNG NÀY ĐỂ CHUYỂN TRANG
     } catch (err) {
       console.error(err)
       alert('Có lỗi khi thêm sản phẩm vào giỏ')

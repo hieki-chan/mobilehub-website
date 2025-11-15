@@ -79,6 +79,11 @@
   flex-shrink: 0;
 }
 
+/* Thêm container cho action để làm anchor cho dropdown */
+.action-container {
+  position: relative;
+}
+
 .top-actions .action {
   display: inline-flex;
   align-items: center;
@@ -87,7 +92,7 @@
   border-radius: 8px;
   color: #fff;
   background: transparent;
-  font-weight: 600;
+  font-weight: 500; /* Giảm độ đậm */
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -212,16 +217,9 @@
   animation: fadeInDown 0.2s ease;
 }
 
-/* Tạo vùng hover mở rộng để không bị mất menu khi di chuyển chuột */
+/* Vô hiệu hóa vùng đệm ::after (đã được xử lý bằng JS) */
 .menu-item-with-submenu::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: transparent;
-  z-index: 11499;
+  display: none;
 }
 
 @keyframes fadeInDown {
@@ -303,5 +301,116 @@
 @media (max-width: 640px) {
   .main-nav {
     display: none;
+  }
+}
+
+/* ===== STYLES MỚI CHO USER DROPDOWN ===== */
+.action-container.user-menu-container {
+  position: relative;
+}
+
+/* Icon chevron */
+.user-menu-container .action i.fa-chevron-down {
+  font-size: 10px;
+  margin-left: 6px;
+  opacity: 0.8;
+  transition: transform 0.2s ease;
+}
+
+/* Xoay chevron khi MỞ (thay vì hover) */
+.user-menu-container .action[aria-expanded="true"] i.fa-chevron-down {
+  transform: rotate(180deg);
+}
+
+/* Khung dropdown */
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px); /* 4px gap */
+  right: 0;
+  width: 210px; /* <<< ĐÃ THAY ĐỔI TỪ 240px */
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  z-index: 12100; /* Cao hơn topbar */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  animation: fadeInDownDropdown 0.2s ease;
+  /* Đảm bảo nó nhận sự kiện chuột */
+  pointer-events: auto;
+}
+
+/* Animation cho dropdown */
+@keyframes fadeInDownDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Các mục trong dropdown */
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  
+  /* Reset styles của button/link */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  
+  /* Kiểu chữ */
+  font-size: 14px; /* Giữ 14px cho dễ đọc */
+  font-weight: 500;  /* Giảm độ đậm */
+  color: var(--text); /* Chữ màu tối trên nền trắng */
+  text-transform: none; /* Đảm bảo không viết hoa */
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.user-dropdown-item i {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.user-dropdown-item:hover {
+  background: #f5f5f5; /* Màu xám nhạt khi hover */
+}
+
+/* Mục đăng xuất */
+.user-dropdown-item.logout {
+  color: #dc2626; /* Màu đỏ cho đăng xuất */
+}
+
+.user-dropdown-item.logout:hover {
+  background: #fff3f3; /* Màu đỏ nhạt khi hover */
+}
+
+.user-dropdown-item.logout i {
+  color: #dc2626;
+}
+
+.user-dropdown-item:hover i {
+  color: var(--text);
+}
+
+.user-dropdown-item.logout:hover i {
+  color: #dc2626;
+}
+
+/* Responsive: Bắt buộc hiển thị tên user ngay cả trên mobile */
+@media (max-width: 760px) {
+  .user-menu-container .action .action-label {
+    display: inline-block !important; 
   }
 }

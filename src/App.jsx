@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Loading from "./pages/Loading";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -15,15 +15,20 @@ import SearchResults from "./pages/SearchResults";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import Installment from "./pages/Installment";
-import NotFound from "./pages/NotFound";  
+import NotFound from "./pages/NotFound";
 import { verifyToken, logout } from "./api/authApi";
 
 export default function App() {
   const [isChecking, setIsChecking] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
 
+
+  const location = useLocation();
+
   const hideFooterPaths = ["/product/", "/cart", "/search"];
-  const currentPath = window.location.pathname;
+
+
+  const currentPath = location.pathname;
   const hideFooter = hideFooterPaths.some((p) => currentPath.startsWith(p));
 
   useEffect(() => {
@@ -78,7 +83,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword/>}></Route>
+          <Route path="/reset-password" element={<ResetPassword />}></Route>
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/search" element={<SearchResults />} />
@@ -88,6 +93,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
+
       {!hideFooter && <Footer />}
     </div>
   );
