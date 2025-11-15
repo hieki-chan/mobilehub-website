@@ -53,7 +53,7 @@ export default function ShopeeCart() {
     <div className="shopee-container">
 
       <div className="shopee-header">
-        <div className="nav-item">Tất cả</div>
+        <div className="nav-item-oh">Tất cả</div>
         <div className="nav-item-inactive">Chờ xác nhận</div>
         <div className="nav-item-inactive">Vận chuyển</div>
         <div className="nav-item-inactive">Chờ giao hàng</div>
