@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react'
 import { formatPrice } from '../../utils/formatPrice'
 import '../../styles/pages/cart.css'
+import { getText } from 'number-to-text-vietnamese'
+
 
 export default function CartItem({ item, loading, remove, updateQty, updateVariant }) {
   const selectedVariant = useMemo(() => {
@@ -71,57 +73,69 @@ export default function CartItem({ item, loading, remove, updateQty, updateVaria
           </div>
         </div>
 
-        <div className="cart-item-quantity">
-          <button
-            className="cart-item-quantity-remove"
-            disabled={loading}
-            onClick={() => {
-              if (confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?')) remove(item)
-            }}
-          >
-            Xóa
-          </button>
+        <div className="cart-item-quantity-container">
+          <div className="cart-item-quantity">
+            <div className="cart-item-quantity-label">Số lượng:</div>
+            <div className="cart-item-quantity-btn">
+              <button
+                className="minus-btn"
+                disabled={loading}
+                aria-label="Giảm"
+                onClick={() => {
+                  const newQty = (item.quantity || 1) - 1
+                  if (newQty <= 0) {
+                    if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) remove(item)
+                  } else {
+                    updateQty(item, newQty)
+                  }
+                }}
+              >
+                -
+              </button>
 
-          <div className="cart-item-quantity-btn">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="^[1-9][0-9]*$"
+                className="no-spinners"
+                value={item.quantity || 1}
+                readOnly
+              />
+
+              <button
+                className="add-btn"
+                disabled={loading}
+                aria-label="Tăng"
+                onClick={() => updateQty(item, (item.quantity || 1) + 1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="cart-item-actions">
             <button
-              className="minus-btn"
+              className="cart-item-remove-btn"
               disabled={loading}
-              aria-label="Giảm"
               onClick={() => {
-                const newQty = (item.quantity || 1) - 1
-                if (newQty <= 0) {
-                  if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) remove(item)
-                } else {
-                  updateQty(item, newQty)
-                }
+                if (confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ?')) remove(item)
               }}
             >
-              -
-            </button>
-
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="^[1-9][0-9]*$"
-              className="no-spinners"
-              value={item.quantity || 1}
-              readOnly
-            />
-
-            <button
-              className="add-btn"
-              disabled={loading}
-              aria-label="Tăng"
-              onClick={() => updateQty(item, (item.quantity || 1) + 1)}
-            >
-              +
+              <i className="fa fa-trash"></i>
+              Xóa
             </button>
           </div>
         </div>
 
         <div className="cart-item-subtotal">
-          Tổng: <b>{formatPrice(subtotal)}</b>
+          <div className="subtotal-price">
+            Tổng: <b>{formatPrice(subtotal)}</b>
+          </div>
+          <div className="subtotal-text">
+            ({getText(Math.round(subtotal)).charAt(0).toUpperCase() + getText(Math.round(subtotal)).slice(1)} đồng)
+          </div>
         </div>
+
       </div>
     </div>
   )
