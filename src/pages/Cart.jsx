@@ -38,32 +38,39 @@ export default function Cart() {
   const cartTotal = Math.round(selectedTotal * 100) / 100
 
   function checkout() {
+    if (selectedItems.length === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán')
+      return
+    }
     navigate('/checkout', { state: { selectedItems } })
   }
 
   if (error) {
     return (
-      <main className="cart-container" style={{ padding: 28, textAlign: 'center' }}>
-        <h2>Lỗi: {error}</h2>
-        <button className="btn btn-primary" onClick={() => window.location.reload()}>
-          Thử lại
-        </button>
+      <main className="cart-page-container">
+        <div className="cart-page-empty">
+          <i className="fa fa-exclamation-triangle" style={{ fontSize: 48, color: '#ef4444', marginBottom: 16 }}></i>
+          <h2>Lỗi: {error}</h2>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>
+            Thử lại
+          </button>
+        </div>
       </main>
     )
   }
 
   if (!cart || cart.length === 0) {
     return (
-      <main className="cart-container" style={{ padding: 28, textAlign: 'center' }}>
-        <h2>Giỏ hàng của bạn trống</h2>
-        <p className="muted">Chưa có sản phẩm nào trong giỏ. Hãy thêm vài món bạn thích.</p>
-        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
-            Quay về trang chủ
-          </button>
-          <button className="btn" onClick={() => navigate(-1)}>
-            Tiếp tục xem
-          </button>
+      <main className="cart-page-container">
+        <div className="cart-page-empty">
+          <i className="fa fa-shopping-cart" style={{ fontSize: 64, color: '#cbd5e1', marginBottom: 20 }}></i>
+          <h2>Giỏ hàng của bạn trống</h2>
+          <p className="muted">Chưa có sản phẩm nào trong giỏ. Hãy khám phá và thêm những sản phẩm yêu thích!</p>
+          <div className="cart-page-empty-actions">
+            <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
+              <i className="fa fa-home"></i> Khám phá ngay
+            </button>
+          </div>
         </div>
       </main>
     )
@@ -84,29 +91,56 @@ export default function Cart() {
     : 'Không có sản phẩm nào được chọn'
 
   return (
-    <main className="cart-container" style={{ padding: 20, position: 'relative' }}>
-      <h3 className="section-title">Giỏ hàng ({cart.length} sản phẩm)</h3>
-
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ cursor: 'pointer', userSelect: 'none' }}>
-          <input
-            type="checkbox"
-            checked={selectedItems.length === cart.length}
-            onChange={toggleSelectAll}
-            style={{ marginRight: 8 }}
-          />
-          Chọn tất cả
-        </label>
+    <main className="cart-page-container">
+      {/* Header */}
+      <div className="cart-page-header">
+        <h2 className="cart-page-title">
+          <i className="fa fa-shopping-cart"></i>
+          Giỏ hàng của bạn
+        </h2>
+        <span className="cart-page-count">{cart.length} sản phẩm</span>
       </div>
 
-      <div className="cart-items">
+      {/* Select All Bar */}
+      <div className="cart-page-select-bar">
+        <label className="cart-page-checkbox-label">
+          <input
+            type="checkbox"
+            className="cart-page-checkbox"
+            checked={selectedItems.length === cart.length && cart.length > 0}
+            onChange={toggleSelectAll}
+          />
+          <span>Chọn tất cả ({cart.length})</span>
+        </label>
+        
+        {selectedItems.length > 0 && (
+          <button
+            className="cart-page-delete-selected"
+            onClick={() => {
+              if (confirm(`Xóa ${selectedItems.length} sản phẩm đã chọn?`)) {
+                selectedItems.forEach(id => {
+                  const item = cart.find(i => i.id === id)
+                  if (item) remove(item)
+                })
+                setSelectedItems([])
+              }
+            }}
+          >
+            <i className="fa fa-trash"></i>
+            Xóa ({selectedItems.length})
+          </button>
+        )}
+      </div>
+
+      {/* Cart Items List */}
+      <div className="cart-page-items-wrapper">
         {cart.map((item) => (
-          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div key={item.id} className="cart-page-item-row">
             <input
               type="checkbox"
+              className="cart-page-checkbox"
               checked={selectedItems.includes(item.id)}
               onChange={() => toggleSelect(item.id)}
-              style={{ width: 18, height: 18 }}
             />
             <CartItem
               item={item}
@@ -117,60 +151,62 @@ export default function Cart() {
             />
           </div>
         ))}
+      </div>
 
-        <div className="cart-summary-wrapper">
-          <div className="cart-summary">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div className="muted">Tạm tính ({selectedItems.length} sản phẩm được chọn)</div>
-              <div>{formatPrice(cartTotal)}</div>
-            </div>
+      {/* Bottom padding for fixed bar */}
+      <div className="cart-page-bottom-spacer"></div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div className="muted">Phí vận chuyển</div>
-              <div className="muted">Miễn phí</div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 750, fontSize: 18 }}>
-              <div>Tổng cộng</div>
-              <div>{formatPrice(cartTotal)}</div>
-            </div>
-
-            <div style={{ marginTop: 8, fontStyle: 'italic', color: '#555', fontSize: 14 }}>
-              ({totalInWordsFormatted} đồng)
-            </div>
-
-            <div style={{ marginTop: 20 }}>
+      {/* Fixed Bottom Summary Bar - Shopee Style */}
+      <div className="cart-page-bottom-bar">
+        <div className="cart-page-bottom-bar-inner">
+          {/* Left: Select All */}
+          <div className="cart-page-bottom-left">
+            <label className="cart-page-checkbox-label">
+              <input
+                type="checkbox"
+                className="cart-page-checkbox"
+                checked={selectedItems.length === cart.length && cart.length > 0}
+                onChange={toggleSelectAll}
+              />
+              <span>Tất cả</span>
+            </label>
+            
+            {selectedItems.length > 0 && (
               <button
-                className="btn btn-primary btn-xl"
-                style={{ width: '100%', height: '40px' }}
-                disabled={loading || selectedItems.length === 0}
-                onClick={checkout}
-              >
-                {loading ? 'Đang xử lý...' : `Thanh toán (${formatPrice(cartTotal)})`}
-              </button>
-            </div>
-
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button
-                className="btn"
-                style={{ flex: 1 }}
-                disabled={loading || cart.length === 0}
+                className="cart-page-link-btn"
                 onClick={() => {
-                  if (confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?')) clear()
+                  if (confirm(`Xóa ${selectedItems.length} sản phẩm?`)) {
+                    selectedItems.forEach(id => {
+                      const item = cart.find(i => i.id === id)
+                      if (item) remove(item)
+                    })
+                    setSelectedItems([])
+                  }
                 }}
               >
-                Xóa giỏ
+                Xóa
               </button>
+            )}
+          </div>
 
-              <button
-                className="btn"
-                style={{ flex: 1 }}
-                disabled={loading}
-                onClick={() => navigate('/')}
-              >
-                Tiếp tục mua sắm
-              </button>
+          {/* Right: Total & Checkout */}
+          <div className="cart-page-bottom-right">
+            <div className="cart-page-total-info">
+              <div className="cart-page-total-label">
+                Tổng thanh toán ({selectedItems.length} sản phẩm):
+              </div>
+              <div className="cart-page-total-price">
+                {formatPrice(cartTotal)}
+              </div>
             </div>
+            
+            <button
+              className="cart-page-checkout-btn"
+              disabled={loading || selectedItems.length === 0}
+              onClick={checkout}
+            >
+              {loading ? 'Đang xử lý...' : 'Mua hàng'}
+            </button>
           </div>
         </div>
       </div>
