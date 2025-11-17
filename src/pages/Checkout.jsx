@@ -83,6 +83,7 @@ export default function Checkout() {
       paymentMethod: paymentMethod.toUpperCase(),
       shippingMethod: shippingMethod.toUpperCase(),
       note: note,
+      addressId: selectedAddress.id,
       items: cart.map(item => ({
         productId: item.productId,
         variantId: item.variantId,
