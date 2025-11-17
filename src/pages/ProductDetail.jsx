@@ -22,7 +22,7 @@ export default function ProductDetail() {
   const [storageCap, setStorageCap] = useState(null)
   const [color, setColor] = useState(null)
   const [qty, setQty] = useState(1)
-  const [adding, setAdding] = useState(false) 
+  const [adding, setAdding] = useState(false)
   const { add } = useCart()
   const { isFav, toggle } = useFav()
 
@@ -102,9 +102,17 @@ export default function ProductDetail() {
     }
   }
 
+  const handleInstallment = () => {
+    navigate(`/installment?productId=${p.id}`, {
+      state: {
+        variantId: selectedVariant.id
+      }
+    });
+  }
+
   return (
     <main className="pdp-container" id="mainContent">
-      <ProductGallery images={galleryImages}/>
+      <ProductGallery images={galleryImages} />
 
       <aside className="pdp-info" aria-label="Thông tin sản phẩm">
         <div className="muted">SKU: <strong id="skuVal">{selectedVariant.id}-{selectedVariant.color_label}</strong></div>
@@ -140,6 +148,7 @@ export default function ProductDetail() {
           color={color}
           onAddCart={onAddCart}
           onBuyNow={onBuyNow}
+          onInstallmentBuy={handleInstallment}
           disabled={adding}
         />
 
@@ -163,7 +172,7 @@ export default function ProductDetail() {
               className="social-btn share-btn"
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ title: p.name, text: p.description, url: location.href }).catch(() => {})
+                  navigator.share({ title: p.name, text: p.description, url: location.href }).catch(() => { })
                 } else {
                   navigator.clipboard?.writeText(location.href).then(() => alert('Đã sao chép liên kết'))
                 }

@@ -10,6 +10,6 @@ export const fetchProducts = async (page = 0, size = 8) => {
 
 export const getProductDetails = async (productId) => {
   const res = await api.get(`${BASE_URL}/${productId}/details`);
-  //console.log(res);
+  //console.log(res.data);
   return res.data;
 };
