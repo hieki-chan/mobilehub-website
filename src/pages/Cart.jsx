@@ -112,7 +112,7 @@ export default function Cart() {
           />
           <span>Chọn tất cả ({cart.length})</span>
         </label>
-        
+
         {selectedItems.length > 0 && (
           <button
             className="cart-page-delete-selected"
@@ -170,7 +170,7 @@ export default function Cart() {
               />
               <span>Tất cả</span>
             </label>
-            
+
             {selectedItems.length > 0 && (
               <button
                 className="cart-page-link-btn"
@@ -198,8 +198,11 @@ export default function Cart() {
               <div className="cart-page-total-price">
                 {formatPrice(cartTotal)}
               </div>
+              <div className="cart-page-total-in-words">
+                {totalInWordsFormatted} đồng
+              </div>
             </div>
-            
+
             <button
               className="cart-page-checkout-btn"
               disabled={loading || selectedItems.length === 0}

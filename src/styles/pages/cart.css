@@ -41,6 +41,13 @@
   font-weight: 600;
 }
 
+.cart-page-total-in-words {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
 /* Select All Bar */
 .cart-page-select-bar {
   display: flex;
