@@ -20,3 +20,14 @@ export const createOrder = async (orderData) => {
     throw error.response?.data || error
   }
 }
+
+export const getOrders = async () => {
+  try {
+    const userId = getUserId()
+    const response = await api.get(`${BASE_URL}/users/${userId}`)
+    return response.data
+  } catch (error) {
+    console.error("Lỗi khi tạo đơn hàng:", error)
+    throw error.response?.data || error
+  }
+}

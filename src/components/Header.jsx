@@ -16,7 +16,7 @@ export default function Header() {
 
   // ✅ FIX: Gọi hook NGOÀI try-catch theo React Rules of Hooks
   const cart = useCart()
-  
+
   // ✅ Safe cart count với fallback
   const cartCount = React.useMemo(() => {
     try {
@@ -73,16 +73,16 @@ export default function Header() {
     try {
       localStorage.removeItem('user')
       localStorage.removeItem('token')
-      
+
       // ✅ Clear cart safely
       if (cart && typeof cart.clear === 'function') {
         cart.clear()
       }
-      
+
       // Dispatch events
       window.dispatchEvent(new Event('user-changed'))
       window.dispatchEvent(new Event('cart-changed'))
-      
+
       navigate('/', { replace: true })
     } catch (error) {
       console.error('Error during logout:', error)
@@ -163,13 +163,13 @@ export default function Header() {
           <nav className="top-actions" aria-label="Tài khoản và giỏ hàng">
             {user ? (
               // Bọc nút "Xin chào" và dropdown trong một container
-              <div 
+              <div
                 className="action-container user-menu-container"
                 onMouseEnter={handleUserMenuEnter} // Quay lại onHover
                 onMouseLeave={handleUserMenuLeave} // Quay lại onHover
               >
-                <button 
-                  className="action" 
+                <button
+                  className="action"
                   onClick={() => navigate('/profile')} // Giữ onClick để đi tới profile
                   title="Xem hồ sơ"
                   aria-label={`Xem hồ sơ của ${getUserDisplayName()}`}
@@ -186,14 +186,14 @@ export default function Header() {
 
                 {/* Menu dropdown */}
                 {isUserMenuOpen && (
-                  <div 
-                    className="user-dropdown-menu" 
+                  <div
+                    className="user-dropdown-menu"
                     role="menu"
                     onMouseEnter={handleUserMenuEnter} // Thêm vào để giữ menu mở
                     onMouseLeave={handleUserMenuLeave} // Thêm vào để đóng menu
                   >
-                    <Link 
-                      to="/profile" 
+                    <Link
+                      to="/profile"
                       className="user-dropdown-item"
                       role="menuitem"
                       onClick={() => setIsUserMenuOpen(false)} // Đóng menu khi click
@@ -201,11 +201,20 @@ export default function Header() {
                       <i className="fa fa-user-pen"></i>
                       <span>Thông tin tài khoản</span>
                     </Link>
-                    <button 
-                      className="user-dropdown-item logout" 
+                    <Link
+                      to="/order-history"
+                      className="user-dropdown-item"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)} // Đóng menu khi click
+                    >
+                      <i className="fa-solid fa-box"></i>
+                      <span>Lịch sử đơn hàng</span>
+                    </Link>
+                    <button
+                      className="user-dropdown-item logout"
                       onClick={() => {
                         handleLogout();
-                        setIsUserMenuOpen(false); 
+                        setIsUserMenuOpen(false);
                       }}
                       role="menuitem"
                     >
@@ -217,9 +226,9 @@ export default function Header() {
               </div>
             ) : (
               // Giữ nguyên logic khi chưa đăng nhập
-              <Link 
-                to="/login" 
-                className="action" 
+              <Link
+                to="/login"
+                className="action"
                 title="Đăng nhập"
                 aria-label="Đăng nhập"
               >
@@ -228,9 +237,9 @@ export default function Header() {
               </Link>
             )}
 
-            <Link 
-              to="/cart" 
-              className="action" 
+            <Link
+              to="/cart"
+              className="action"
               aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
             >
               <i className="fa fa-shopping-cart"></i>
@@ -248,7 +257,7 @@ export default function Header() {
       <nav className="main-nav" id="mainNav" role="navigation" aria-label="Main navigation">
         <div className="container nav-inner">
           <ul className="menu" role="menubar" aria-label="Danh mục">
-            <li 
+            <li
               className="menu-item-with-submenu"
               onMouseEnter={handleMegaMenuEnter} // Giữ nguyên hover + delay
               onMouseLeave={handleMegaMenuLeave} // Giữ nguyên hover + delay
@@ -259,9 +268,9 @@ export default function Header() {
                   <span>Điện thoại</span>
                   <i className="fa fa-chevron-down" style={{ fontSize: 10, marginLeft: 4 }}></i>
                 </Link>
-                
+
                 {megaMenuOpen && (
-                  <div 
+                  <div
                     className="mega-menu"
                     onMouseEnter={handleMegaMenuEnter} // Giữ nguyên hover + delay
                     onMouseLeave={handleMegaMenuLeave} // Giữ nguyên hover + delay
@@ -284,7 +293,7 @@ export default function Header() {
                 )}
               </div>
             </li>
-            
+
             <li><Link to="/search?q=Tablet" className="nav-item"><i className="fa fa-tablet"></i><span>Tablet</span></Link></li>
             <li><Link to="/search?q=Phụ kiện" className="nav-item"><i className="fa fa-headphones"></i><span>Phụ kiện</span></Link></li>
             <li><Link to="/search?q=Sạc Pin" className="nav-item"><i className="fa fa-bolt"></i><span>Sạc &amp; Pin</span></Link></li>
