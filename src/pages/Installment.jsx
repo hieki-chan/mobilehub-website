@@ -1,512 +1,420 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { getProductDetails } from '../api/productApi'
 import { formatPrice } from '../utils/formatPrice'
+import { getDefaultAddress } from '../api/addressApi'
 import '../styles/pages/installment.css'
 
-const financialPartners = [
+// --- MOCK DATA CÔNG TY TÀI CHÍNH ---
+// Mỗi công ty có quy định về trả trước (min-max) và kỳ hạn hỗ trợ
+const FINANCE_COMPANIES = [
   {
     id: 'home_credit',
     name: 'Home Credit',
-    logo: 'https://via.placeholder.com/80x40?text=HC',
-    terms: [6, 9, 12, 18],
-    interestRate: 0,
-    requireCard: false,
-    description: 'Duyệt nhanh 5 phút, không cần thẻ tín dụng'
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Home_Credit_logo.svg/2560px-Home_Credit_logo.svg.png',
+    interestRate: 0.018, // 1.8% / tháng
+    minPrepayPercent: 20,
+    maxPrepayPercent: 80,
+    supportedTerms: [6, 9, 12],
+    requirements: 'CMND/CCCD + Bằng lái xe',
+    approvalTime: '15 phút'
   },
   {
     id: 'fe_credit',
     name: 'FE Credit',
-    logo: 'https://via.placeholder.com/80x40?text=FE',
-    terms: [6, 9, 12, 15, 18],
-    interestRate: 0,
-    requireCard: false,
-    description: 'Lãi suất 0%, duyệt nhanh online'
+    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/01/Logo-FE-Credit-Red-White-835x1024.png',
+    interestRate: 0.021, // 2.1% / tháng
+    minPrepayPercent: 0,
+    maxPrepayPercent: 70,
+    supportedTerms: [3, 6, 9, 12, 15, 18, 24],
+    requirements: 'CMND/CCCD + Hộ khẩu',
+    approvalTime: '30 phút'
   },
   {
     id: 'mcredit',
     name: 'MCredit',
-    logo: 'https://via.placeholder.com/80x40?text=MC',
-    terms: [6, 9, 12],
-    interestRate: 0,
-    requireCard: false,
-    description: 'Trả góp 0% qua app MCredit'
+    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/02/Logo-MCredit.png',
+    interestRate: 0.015, // 1.5% / tháng (ưu đãi)
+    minPrepayPercent: 30,
+    maxPrepayPercent: 90,
+    supportedTerms: [6, 12],
+    requirements: 'CMND/CCCD',
+    approvalTime: '5 phút (Duyệt Online)'
   },
   {
     id: 'kredivo',
     name: 'Kredivo',
-    logo: 'https://via.placeholder.com/80x40?text=KRD',
-    terms: [3, 6, 12],
-    interestRate: 0,
-    requireCard: false,
-    description: 'Mua trước trả sau linh hoạt'
-  },
-  {
-    id: 'visa',
-    name: 'Thẻ tín dụng Visa',
-    logo: 'https://via.placeholder.com/80x40?text=VISA',
-    terms: [3, 6, 9, 12],
-    interestRate: 0,
-    requireCard: true,
-    description: 'Trả góp 0% qua thẻ Visa các ngân hàng'
-  },
-  {
-    id: 'mastercard',
-    name: 'Thẻ tín dụng Mastercard',
-    logo: 'https://via.placeholder.com/80x40?text=MC',
-    terms: [3, 6, 9, 12],
-    interestRate: 0,
-    requireCard: true,
-    description: 'Trả góp 0% qua thẻ Mastercard'
-  },
-  {
-    id: 'jcb',
-    name: 'Thẻ tín dụng JCB',
-    logo: 'https://via.placeholder.com/80x40?text=JCB',
-    terms: [3, 6, 9, 12],
-    interestRate: 0,
-    requireCard: true,
-    description: 'Trả góp 0% qua thẻ JCB'
+    logo: 'https://images.glints.com/unsafe/glints-dashboard.s3.amazonaws.com/company-logo/85434d850f42d817750d09c02e19130e.png',
+    interestRate: 0, // 0% lãi suất cho kỳ hạn ngắn
+    minPrepayPercent: 0,
+    maxPrepayPercent: 0, // Không cần trả trước
+    supportedTerms: [3], // Chỉ hỗ trợ 3 tháng
+    requirements: 'Tài khoản Kredivo',
+    approvalTime: 'Ngay lập tức'
   }
 ]
 
+// Các mốc trả trước & kỳ hạn để hiển thị trên UI
+const PREPAY_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+const TERM_OPTIONS = [3, 6, 9, 12, 15, 18, 24]
+
 export default function Installment() {
   const navigate = useNavigate()
-  const location = useLocation()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  
   const productId = searchParams.get("productId")
+  // Lấy variantId từ state khi navigate từ trang ProductDetail, nếu không có thì null
+  const initialVariantId = location.state?.variantId
 
-
-  const selectedVariantIdFromDetail = location.state?.variantId || null
-
+  // --- STATE CHUNG ---
+  const [step, setStep] = useState(1) // 1: Chọn gói, 2: Thông tin
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const [selectedPartner, setSelectedPartner] = useState(null)
-  const [selectedTerm, setSelectedTerm] = useState(12)
+  // --- STATE BƯỚC 1: CẤU HÌNH TRẢ GÓP ---
+  const [prepayPercent, setPrepayPercent] = useState(30) // Mặc định trả trước 30%
+  const [selectedTerm, setSelectedTerm] = useState(6)    // Mặc định 6 tháng
+  const [selectedCompany, setSelectedCompany] = useState(null) // Công ty user chọn để sang bước 2
 
-  const [showPartnerDetail, setShowPartnerDetail] = useState(false)
-
-  const [formData, setFormData] = useState({
+  // --- STATE BƯỚC 2: THÔNG TIN ---
+  const [userInfo, setUserInfo] = useState({
     fullName: '',
     phone: '',
-    email: '',
     idCard: '',
-    address: '',
-    acceptTerms: false
+    dob: '',
+    address: ''
   })
-  const [errors, setErrors] = useState({})
 
+  // Fetch sản phẩm
   useEffect(() => {
     const load = async () => {
       try {
         const data = await getProductDetails(productId)
         setProduct(data)
-
+        
+        // Xác định variant đang chọn
         let variant = null
-
-        if (selectedVariantIdFromDetail) {
-          variant = data.variants?.find(v => v.id === selectedVariantIdFromDetail)
+        if (initialVariantId) {
+          variant = data.variants?.find(v => v.id === initialVariantId)
         }
-
         if (!variant) {
-          variant = data.variants?.find(v => v.id === data.defaultVariantId)
+          variant = data.variants?.find(v => v.id === data.defaultVariantId) || data.variants?.[0]
         }
-
-        if (!variant) {
-          variant = data.variants?.[0]
-        }
-
         setSelectedVariant(variant)
-        setSelectedPartner(financialPartners[0])
 
+        // Autofill user info nếu đã login
+        const savedUser = JSON.parse(localStorage.getItem('user'))
+        if (savedUser) {
+          setUserInfo(prev => ({
+            ...prev,
+            fullName: savedUser.name || '',
+            phone: savedUser.phone || '',
+            address: savedUser.address || '' // Nếu user object có address
+          }))
+          // Nếu có API lấy địa chỉ mặc định, có thể gọi ở đây
+          try {
+             const defaultAddr = await getDefaultAddress()
+             if(defaultAddr) {
+               setUserInfo(prev => ({ ...prev, address: [defaultAddr.addressDetail, defaultAddr.ward, defaultAddr.district, defaultAddr.province].filter(Boolean).join(', ') }))
+             }
+          } catch {}
+        }
       } catch (err) {
         console.error(err)
+      } finally {
+        setLoading(false)
       }
     }
-
     load()
-  }, [productId])
+  }, [productId, initialVariantId])
 
-  useEffect(() => {
-    const u = localStorage.getItem('user')
-    if (!u) return
-    try {
-      const user = JSON.parse(u)
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.name || '',
-        phone: user.phone || '',
-        email: user.email || ''
-      }))
-    } catch { }
-  }, [])
-
-  const getDiscountedPrice = () => {
+  // Tính giá
+  const finalPrice = useMemo(() => {
     if (!selectedVariant) return 0
+    const price = selectedVariant.price
+    const discount = product?.discountInPercent || 0
+    return Math.round(price * (1 - discount / 100))
+  }, [selectedVariant, product])
 
-    const base = selectedVariant.price
-    const discount = product?.discount?.valueInPercent || 0
+  // Lọc công ty phù hợp với cấu hình
+  const availableCompanies = useMemo(() => {
+    return FINANCE_COMPANIES.filter(company => {
+      // 1. Kiểm tra trả trước có nằm trong khoảng hỗ trợ không
+      if (prepayPercent < company.minPrepayPercent || prepayPercent > company.maxPrepayPercent) return false
+      // 2. Kiểm tra kỳ hạn có hỗ trợ không
+      if (!company.supportedTerms.includes(selectedTerm)) return false
+      return true
+    })
+  }, [prepayPercent, selectedTerm])
 
-    return Math.round(base * (1 - discount / 100))
+  // Xử lý đặt mua ở Bước 1
+  const handleSelectPackage = (company) => {
+    setSelectedCompany(company)
+    setStep(2)
+    window.scrollTo(0, 0)
   }
 
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validate = () => {
-    const e = {}
-
-    if (!formData.fullName.trim()) e.fullName = 'Vui lòng nhập họ tên'
-    if (!formData.phone.trim()) e.phone = 'Vui lòng nhập số điện thoại'
-    else if (!/^[0-9]{10,11}$/.test(formData.phone)) e.phone = 'Số điện thoại không hợp lệ'
-
-    if (!formData.email.trim()) e.email = 'Vui lòng nhập email'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'Email không hợp lệ'
-
-    if (!formData.idCard.trim()) e.idCard = 'Vui lòng nhập CMND/CCCD'
-    else if (!/^[0-9]{9,12}$/.test(formData.idCard)) e.idCard = 'CMND/CCCD không hợp lệ'
-
-    if (!formData.address.trim()) e.address = 'Vui lòng nhập địa chỉ'
-
-    if (!formData.acceptTerms) e.acceptTerms = 'Vui lòng đồng ý điều khoản'
-    if (!selectedPartner) e.partner = 'Vui lòng chọn hình thức trả góp'
-
-    setErrors(e)
-    return Object.keys(e).length === 0
-  }
-
-  const handleSubmit = (e) => {
+  // Xử lý submit ở Bước 2
+  const handleFinalSubmit = (e) => {
     e.preventDefault()
-    if (!validate()) return alert('Vui lòng điền đầy đủ thông tin')
+    if (!userInfo.fullName || !userInfo.phone || !userInfo.idCard || !userInfo.address) {
+      alert('Vui lòng điền đầy đủ thông tin!')
+      return
+    }
 
-    alert(`
-Đã gửi hồ sơ trả góp!
-Sản phẩm: ${product.name}
-Variant: ${selectedVariant?.color_label} / ${selectedVariant?.storage_cap}GB
-Hình thức: ${selectedPartner.name}
-Kỳ hạn: ${selectedTerm} tháng
-`)
+    alert(`Đăng ký trả góp thành công!\nHồ sơ của bạn đang được ${selectedCompany.name} xét duyệt.\nChúng tôi sẽ liên hệ lại số ${userInfo.phone} trong ít phút.`)
     navigate('/')
   }
 
-  const calculateInstallment = () => {
-    if (!selectedVariant || !selectedTerm) return 0
-    const price = getDiscountedPrice()
-    const total = price * (1 + (selectedPartner?.interestRate || 0))
-    return Math.ceil(total / selectedTerm)
+  // Tính toán chi tiết tiền nong
+  const calculatePayment = (company) => {
+    const prepayAmount = Math.round(finalPrice * prepayPercent / 100)
+    const loanAmount = finalPrice - prepayAmount
+    
+    // Công thức đơn giản: (Gốc + Lãi) / Tháng
+    // Lãi tính trên dư nợ ban đầu (flat rate) để demo đơn giản
+    const totalInterest = loanAmount * company.interestRate * selectedTerm
+    const totalPay = loanAmount + totalInterest
+    const monthlyPay = Math.round(totalPay / selectedTerm)
+    const priceDiff = totalPay - loanAmount // Chênh lệch so với mua thẳng (chỉ tính phần vay)
+
+    return { prepayAmount, loanAmount, monthlyPay, totalPay, priceDiff }
   }
 
+  if (loading || !product || !selectedVariant) return <div className="loading-spinner">Đang tải...</div>
 
-  if (!product || !selectedVariant) {
-    return (
-      <main className="container" style={{ padding: 40, textAlign: 'center' }}>
-        <i className="fa fa-spinner fa-spin" style={{ fontSize: 32 }}></i>
-        <div>Đang tải...</div>
-      </main>
-    )
-  }
-
-  const monthlyPayment = calculateInstallment()
-
-  return (
-    <main className="installment-page">
-      <div className="container">
-
-        {/* Breadcrumb */}
-        <div className="breadcrumb">
-          <a onClick={() => navigate('/')}>Trang chủ</a>
-          <span> / </span>
-          <a onClick={() => navigate(`/product/${product.id}`)}>{product.name}</a>
-          <span> / Trả góp</span>
-        </div>
-
-        <div className="installment-content">
-
-          {/* LEFT */}
-          <div className="installment-left">
-            <h2 className="page-title">
-              <i className="fa fa-credit-card"></i> Đăng ký trả góp
-            </h2>
-
-            {/* Thông tin sản phẩm */}
-            <section className="installment-section">
-              <h3>Thông tin sản phẩm</h3>
-
-              <div className="product-preview">
-                <img
-                  src={selectedVariant.imageUrl}
-                  alt={product.name}
-                />
-
-                <div className="product-preview-info">
-                  <div className="product-preview-name">
-                    {product.name}
-                  </div>
-
-                  <div className="product-preview-price">
-                    {product.discount?.valueInPercent > 0 ? (
-                      <>
-                        <span className="price-old">
-                          {formatPrice(selectedVariant.price)}
-                        </span>
-                        <span className="price-new">
-                          {formatPrice(getDiscountedPrice())}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="price-new">
-                        {formatPrice(selectedVariant.price)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Variant selector */}
-                  {product.variants && product.variants.length > 1 && (
-                    <select
-                      value={selectedVariant.id}
-                      onChange={(e) => {
-                        const variant = product.variants.find(v => v.id === parseInt(e.target.value))
-                        setSelectedVariant(variant)
-                      }}
-                    >
-                      {product.variants.map(v => (
-                        <option key={v.id} value={v.id}>
-                          {v.color_label} - {v.storage_cap}GB
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Partner */}
-            <section className="installment-section">
-              <h3>Chọn hình thức trả góp</h3>
-
-              <div className="partner-grid">
-                {financialPartners.map(p => (
-                  <div
-                    key={p.id}
-                    className={`partner-card ${selectedPartner?.id === p.id ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedPartner(p)
-                      setSelectedTerm(p.terms[0])
-                    }}
-                  >
-                    <div className="partner-logo"><img src={p.logo} /></div>
-                    <div className="partner-name">{p.name}</div>
-                    <div className="partner-desc">{p.description}</div>
-
-                    {p.requireCard && <div className="partner-badge">Cần thẻ tín dụng</div>}
-                    {p.interestRate === 0 && <div className="partner-badge interest-free">0% lãi suất</div>}
-                  </div>
-                ))}
-              </div>
-
-              {selectedPartner && (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowPartnerDetail(true)}
-                  style={{ marginTop: 12 }}
-                >
-                  <i className="fa fa-info-circle"></i> Xem điều kiện & thủ tục
-                </button>
-              )}
-            </section>
-
-            {/* Kỳ hạn */}
-            {selectedPartner && (
-              <section className="installment-section">
-                <h3>Chọn kỳ hạn trả góp</h3>
-
-                <div className="term-grid">
-                  {selectedPartner.terms.map(term => (
-                    <button
-                      key={term}
-                      className={`term-btn ${selectedTerm === term ? 'active' : ''}`}
-                      onClick={() => setSelectedTerm(term)}
-                    >
-                      <div className="term-months">{term} tháng</div>
-                      <div className="term-payment">
-                        {formatPrice(Math.ceil(getDiscountedPrice() / term))}/tháng
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Form */}
-            <section className="installment-section">
-              <h3>Thông tin khách hàng</h3>
-
-              <form onSubmit={handleSubmit}>
-
-                <label className="field">
-                  <div className="label">Họ và tên *</div>
-                  <input name="fullName" value={formData.fullName} onChange={handleChange} />
-                  {errors.fullName && <div className="field-error">{errors.fullName}</div>}
-                </label>
-
-                <div className="form-row-2">
-                  <label className="field">
-                    <div className="label">Số điện thoại *</div>
-                    <input name="phone" value={formData.phone} onChange={handleChange} />
-                    {errors.phone && <div className="field-error">{errors.phone}</div>}
-                  </label>
-
-                  <label className="field">
-                    <div className="label">Email *</div>
-                    <input name="email" value={formData.email} onChange={handleChange} />
-                    {errors.email && <div className="field-error">{errors.email}</div>}
-                  </label>
-                </div>
-
-                <label className="field">
-                  <div className="label">CMND/CCCD *</div>
-                  <input name="idCard" value={formData.idCard} onChange={handleChange} />
-                  {errors.idCard && <div className="field-error">{errors.idCard}</div>}
-                </label>
-
-                <label className="field">
-                  <div className="label">Địa chỉ *</div>
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows="3" />
-                  {errors.address && <div className="field-error">{errors.address}</div>}
-                </label>
-
-                <label className="checkbox-field">
-                  <input type="checkbox" name="acceptTerms" checked={formData.acceptTerms} onChange={handleChange} />
-                  <span>
-                    Tôi đồng ý với{' '}
-                    <a onClick={(e) => { e.preventDefault(); setShowPartnerDetail(true) }}>
-                      điều khoản & điều kiện
-                    </a>
-                  </span>
-                </label>
-                {errors.acceptTerms && <div className="field-error">{errors.acceptTerms}</div>}
-
-                <button className="btn btn-primary btn-xl" style={{ width: '100%', marginTop: 20 }}>
-                  <i className="fa fa-paper-plane"></i> Gửi hồ sơ trả góp
-                </button>
-
-              </form>
-            </section>
-          </div>
-
-          {/* RIGHT */}
-          <div className="installment-right">
-            <div className="installment-summary">
-              <h3>Tóm tắt trả góp</h3>
-
-              <div className="summary-item">
-                <span>Giá sản phẩm:</span>
-                <strong>{formatPrice(getDiscountedPrice())}</strong>
-              </div>
-
-              {selectedPartner && (
-                <>
-                  <div className="summary-item">
-                    <span>Hình thức:</span>
-                    <strong>{selectedPartner.name}</strong>
-                  </div>
-
-                  <div className="summary-item">
-                    <span>Kỳ hạn:</span>
-                    <strong>{selectedTerm} tháng</strong>
-                  </div>
-
-                  <div className="summary-divider"></div>
-
-                  <div className="summary-total">
-                    <span>Trả mỗi tháng:</span>
-                    <strong>{formatPrice(monthlyPayment)}</strong>
-                  </div>
-
-                  <div className="summary-note">
-                    <i className="fa fa-info-circle"></i>
-                    <div>
-                      <strong>Lưu ý:</strong>
-                      <ul>
-                        <li>Miễn phí duyệt hồ sơ</li>
-                        <li>Duyệt từ 5–30 phút</li>
-                        <li>Yêu cầu CMND/CCCD</li>
-                        {selectedPartner.requireCard && <li>Cần có thẻ tín dụng</li>}
-                      </ul>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {!selectedPartner && (
-                <div className="summary-empty">
-                  <i className="fa fa-hand-pointer"></i>
-                  <p>Vui lòng chọn hình thức trả góp</p>
-                </div>
-              )}
+  // --- RENDER BƯỚC 1: CHỌN GÓI ---
+  const renderStep1 = () => (
+    <div className="install-step-1 fade-in">
+      <div className="product-summary-header">
+        <img src={selectedVariant.imageUrl} alt={product.name} />
+        <div className="prod-info">
+            <h3>{product.name}</h3>
+            <div className="prod-variant">Phiên bản: {selectedVariant.storage_cap}GB - {selectedVariant.color_label}</div>
+            <div className="prod-price">
+                Giá bán: <span className="price-text">{formatPrice(finalPrice)}</span>
             </div>
-
-            <div className="installment-benefits">
-              <h4><i className="fa fa-gift"></i> Ưu đãi</h4>
-              <ul>
-                <li><i className="fa fa-check-circle"></i> 0% lãi suất</li>
-                <li><i className="fa fa-check-circle"></i> Duyệt nhanh</li>
-                <li><i className="fa fa-check-circle"></i> Không cần thẻ tín dụng</li>
-                <li><i className="fa fa-check-circle"></i> Nhận hàng ngay khi duyệt</li>
-              </ul>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* MODAL */}
-      {showPartnerDetail && selectedPartner && (
-        <div className="modal-overlay open" onClick={() => setShowPartnerDetail(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
-
-            <button className="modal-close" onClick={() => setShowPartnerDetail(false)}>&times;</button>
-
-            <div className="modal-body">
-              <h3>{selectedPartner.name}</h3>
-
-              <div className="partner-detail-section">
-                <h4>Điều kiện</h4>
-                <ul>
-                  <li>✓ Công dân Việt Nam từ 18 tuổi</li>
-                  <li>✓ Có CMND/CCCD</li>
-                  <li>✓ Có thu nhập ổn định</li>
-                  {selectedPartner.requireCard && <li>✓ Có thẻ tín dụng</li>}
-                </ul>
-              </div>
-
-              <div className="partner-detail-section">
-                <h4>Thủ tục</h4>
-                <ol>
-                  <li>Điền thông tin</li>
-                  <li>Chụp CMND/CCCD</li>
-                  <li>Chụp chân dung</li>
-                  {selectedPartner.requireCard && <li>Cung cấp thông tin thẻ tín dụng</li>}
-                  <li>Duyệt hồ sơ 5–30 phút</li>
-                </ol>
-              </div>
-
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowPartnerDetail(false)}>
-                Đã hiểu
-              </button>
+      <div className="filter-controls">
+        <div className="control-group">
+            <label>Chọn mức trả trước ({prepayPercent}%)</label>
+            <div className="options-grid">
+                {PREPAY_OPTIONS.map(p => (
+                    <button 
+                        key={p} 
+                        className={`opt-btn ${prepayPercent === p ? 'active' : ''}`}
+                        onClick={() => setPrepayPercent(p)}
+                    >
+                        {p}%
+                    </button>
+                ))}
             </div>
-          </div>
+            <div className="money-preview">
+                Số tiền trả trước: <strong>{formatPrice(Math.round(finalPrice * prepayPercent / 100))}</strong>
+            </div>
         </div>
-      )}
+
+        <div className="control-group">
+            <label>Chọn kỳ hạn (tháng)</label>
+            <div className="options-grid">
+                {TERM_OPTIONS.map(t => (
+                    <button 
+                        key={t} 
+                        className={`opt-btn ${selectedTerm === t ? 'active' : ''}`}
+                        onClick={() => setSelectedTerm(t)}
+                    >
+                        {t} tháng
+                    </button>
+                ))}
+            </div>
+        </div>
+      </div>
+
+      <div className="companies-list">
+        <h3>Công ty tài chính hỗ trợ</h3>
+        {availableCompanies.length === 0 ? (
+             <div className="empty-result">
+                Không có công ty nào hỗ trợ mức trả trước {prepayPercent}% trong {selectedTerm} tháng. 
+                <br/>Vui lòng thử thay đổi mức trả trước hoặc kỳ hạn.
+             </div>
+        ) : (
+            <div className="company-grid">
+                {availableCompanies.map(comp => {
+                    const calc = calculatePayment(comp)
+                    return (
+                        <div key={comp.id} className="company-card">
+                            <div className="comp-header">
+                                <img src={comp.logo} alt={comp.name} className="comp-logo"/>
+                                <div className="comp-name">{comp.name}</div>
+                            </div>
+                            <div className="comp-body">
+                                <div className="row-info">
+                                    <span>Góp mỗi tháng</span>
+                                    <span className="highlight">{formatPrice(calc.monthlyPay)}</span>
+                                </div>
+                                <div className="row-info">
+                                    <span>Lãi suất thực/tháng</span>
+                                    <span>{comp.interestRate === 0 ? '0%' : `${(comp.interestRate * 100).toFixed(1)}%`}</span>
+                                </div>
+                                <div className="row-info">
+                                    <span>Tổng tiền phải trả</span>
+                                    <span>{formatPrice(calc.totalPay + calc.prepayAmount)}</span>
+                                </div>
+                                <div className="row-info">
+                                    <span>Chênh lệch giá</span>
+                                    <span>{formatPrice(calc.priceDiff)}</span>
+                                </div>
+                                <div className="requirements-box">
+                                    <i className="fa fa-id-card"></i> {comp.requirements}
+                                </div>
+                            </div>
+                            <div className="comp-footer">
+                                <button className="btn btn-primary btn-full" onClick={() => handleSelectPackage(comp)}>
+                                    ĐẶT MUA
+                                </button>
+                                <div className="approve-time">Duyệt hồ sơ: {comp.approvalTime}</div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // --- RENDER BƯỚC 2: ĐIỀN THÔNG TIN ---
+  const renderStep2 = () => {
+    if (!selectedCompany) return null
+    const calc = calculatePayment(selectedCompany)
+
+    return (
+        <div className="install-step-2 fade-in">
+            <button className="btn-back-step" onClick={() => setStep(1)}>
+                <i className="fa fa-arrow-left"></i> Quay lại chọn gói
+            </button>
+
+            <div className="layout-2-col">
+                {/* Form Trái: Thông tin khách hàng */}
+                <div className="form-section">
+                    <h3>Thông tin người mua</h3>
+                    <form onSubmit={handleFinalSubmit}>
+                        <div className="form-group">
+                            <label>Họ và tên *</label>
+                            <input 
+                                required
+                                value={userInfo.fullName} 
+                                onChange={e => setUserInfo({...userInfo, fullName: e.target.value})}
+                                placeholder="Nguyễn Văn A"
+                            />
+                        </div>
+                        <div className="row-2">
+                            <div className="form-group">
+                                <label>Số điện thoại *</label>
+                                <input 
+                                    required
+                                    type="tel"
+                                    value={userInfo.phone} 
+                                    onChange={e => setUserInfo({...userInfo, phone: e.target.value})}
+                                    placeholder="0912xxxxxx"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Ngày sinh</label>
+                                <input 
+                                    type="date"
+                                    value={userInfo.dob} 
+                                    onChange={e => setUserInfo({...userInfo, dob: e.target.value})}
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Số CMND/CCCD *</label>
+                            <input 
+                                required
+                                value={userInfo.idCard} 
+                                onChange={e => setUserInfo({...userInfo, idCard: e.target.value})}
+                                placeholder="12 số căn cước"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Địa chỉ nhận hàng / hộ khẩu *</label>
+                            <textarea 
+                                required
+                                rows="3"
+                                value={userInfo.address} 
+                                onChange={e => setUserInfo({...userInfo, address: e.target.value})}
+                                placeholder="Số nhà, đường, phường/xã..."
+                            ></textarea>
+                        </div>
+                        <button type="submit" className="btn btn-primary btn-xl btn-full" style={{marginTop: 20}}>
+                            GỬI HỒ SƠ TRẢ GÓP
+                        </button>
+                        <p className="term-note">Bằng cách ấn vào nút gửi hồ sơ, bạn đồng ý với các điều khoản của {selectedCompany.name} và MobileHub.</p>
+                    </form>
+                </div>
+
+                {/* Cột Phải: Tóm tắt gói */}
+                <div className="summary-section">
+                    <div className="summary-card">
+                        <div className="sum-header">
+                            <img src={product.imageUrl || selectedVariant.imageUrl} alt="" width="60"/>
+                            <div>
+                                <h4>{product.name}</h4>
+                                <div className="v-name">{selectedVariant.storage_cap}GB - {selectedVariant.color_label}</div>
+                            </div>
+                        </div>
+                        <div className="divider"></div>
+                        <div className="sum-row">
+                            <span>Giá sản phẩm:</span>
+                            <b>{formatPrice(finalPrice)}</b>
+                        </div>
+                        <div className="sum-row">
+                            <span>Đơn vị tài chính:</span>
+                            <b>{selectedCompany.name}</b>
+                        </div>
+                        <div className="sum-row">
+                            <span>Kỳ hạn:</span>
+                            <b>{selectedTerm} tháng</b>
+                        </div>
+                        <div className="sum-row">
+                            <span>Trả trước ({prepayPercent}%):</span>
+                            <b>{formatPrice(calc.prepayAmount)}</b>
+                        </div>
+                         <div className="sum-row">
+                            <span>Góp mỗi tháng:</span>
+                            <b className="highlight">{formatPrice(calc.monthlyPay)}</b>
+                        </div>
+                        <div className="sum-row">
+                            <span>Tổng tiền góp:</span>
+                            <span className="muted">{formatPrice(calc.totalPay)}</span>
+                        </div>
+                        <div className="sum-row">
+                            <span>Chênh lệch:</span>
+                            <span className="muted">{formatPrice(calc.priceDiff)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+  }
+
+  return (
+    <main className="installment-page">
+        <div className="container">
+            <div className="stepper">
+                <div className={`step-item ${step >= 1 ? 'active' : ''}`}>1. Chọn gói trả góp</div>
+                <div className="step-line"></div>
+                <div className={`step-item ${step >= 2 ? 'active' : ''}`}>2. Thông tin hồ sơ</div>
+            </div>
+            
+            {step === 1 ? renderStep1() : renderStep2()}
+        </div>
     </main>
   )
 }
