@@ -1,26 +1,223 @@
-.profile-content h3 {
-    margin: 0 0 20px;
-    font-size: 20px;
-    font-weight: 700;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    padding-bottom: 12px;
+/* src/styles/components/profile/user-info.css */
+
+.user-info-container {
+  background: #fff;
+  padding: 0;
 }
 
-.profile-content h4 {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 16px 0 12px;
-    color: var(--text);
+.info-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
 }
 
-.field-error {
-    color: var(--brand-primary);
-    font-size: 12px;
-    margin-top: 4px;
-    font-weight: 600;
+.info-header h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #333;
 }
 
-.required {
-    color: var(--brand-primary);
-    margin-left: 2px;
+.info-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.info-body {
+  display: flex;
+  gap: 40px;
+}
+
+/* Cột Avatar */
+.avatar-section {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid #f0f0f0;
+  padding-right: 40px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 15px;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
+}
+
+.avatar-upload-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #333;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid #fff;
+  transition: background 0.2s;
+}
+
+.avatar-upload-btn:hover {
+  background: var(--brand-primary, #d00000);
+}
+
+.avatar-note {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}
+
+/* Cột Form */
+.info-form {
+  flex: 1;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.form-group label {
+  width: 120px; /* Label cố định chiều rộng */
+  font-weight: 500;
+  color: #555;
+  flex-shrink: 0;
+}
+
+/* Style chung cho input và select */
+.form-group input,
+.form-group select {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid transparent; /* Mặc định ẩn border */
+  border-radius: 4px;
+  color: #333;
+  transition: all 0.2s;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* Style riêng cho select để đẹp hơn */
+.gender-select {
+  appearance: none; /* Ẩn mũi tên mặc định của trình duyệt nếu muốn custom kỹ hơn */
+  /* Thêm mũi tên custom nếu cần, hoặc dùng mặc định */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 30px; /* Chừa chỗ cho mũi tên */
+}
+
+/* Khi disabled (không edit), ẩn border và background */
+.form-group select:disabled {
+  opacity: 1; /* Giữ màu chữ đậm */
+  color: #333;
+  background-image: none; /* Ẩn mũi tên khi không edit */
+  cursor: default;
+}
+
+/* Trạng thái Edit: hiện border lên */
+.form-group input.editable,
+.form-group select.editable {
+  border-color: #ddd;
+  background-color: #fff;
+}
+
+.form-group input.editable:focus,
+.form-group select.editable:focus {
+  border-color: var(--brand-primary, #d00000);
+  outline: none;
+}
+
+.input-with-icon {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.input-with-icon input {
+  width: 100%;
+}
+
+.lock-icon {
+  position: absolute;
+  right: 10px;
+  color: #999;
+}
+
+/* Actions */
+.form-actions {
+  margin-top: 30px;
+  padding-left: 120px; /* Căn thẳng hàng với input */
+  display: flex;
+  gap: 15px;
+}
+
+/* Message Box */
+.message-box {
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-left: 120px;
+}
+
+.message-box.success {
+  background: #e6fffa;
+  color: #008060;
+}
+
+.message-box.error {
+  background: #fff0f0;
+  color: #d00000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .info-body {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .avatar-section {
+    border-right: none;
+    padding-right: 0;
+    width: 100%;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 20px;
+  }
+
+  .form-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .form-group label {
+    margin-bottom: 6px;
+  }
+
+  .form-actions, .message-box {
+    padding-left: 0;
+    margin-left: 0;
+  }
 }

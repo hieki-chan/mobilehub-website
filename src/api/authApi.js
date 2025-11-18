@@ -122,6 +122,56 @@ export const resetPassword = async (newPassword, token) => {
   }
 };
 
+
+
+export const getUserProfile = async () => {
+  try {
+    // Endpoint này tùy thuộc vào Backend của bạn, thường là /users/my-info hoặc /auth/me
+    // Tôi đang giả định là /users/my-info theo chuẩn RESTful
+    const res = await api.get('/users/my-info'); 
+    return res.data.result; // Giả định API trả về { result: { ...user } }
+  } catch (err) {
+    console.error("Lấy thông tin thất bại:", err);
+    throw err;
+  }
+};
+
+export const updateProfile = async (userData) => {
+  try {
+    // Backend thường nhận JSON hoặc Multipart nếu có file ảnh
+    // Ở đây ta gửi JSON trước
+    const res = await api.put('/users/update', userData);
+    
+    // Nếu cập nhật thành công, cập nhật lại localStorage nếu cần
+    if (res.data?.result) {
+        const user = res.data.result;
+        if (user.email) localStorage.setItem("email", user.email);
+    }
+    
+    return res.data;
+  } catch (err) {
+    console.error("Cập nhật thất bại:", err);
+    throw err;
+  }
+};
+
+export const uploadAvatar = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const res = await api.post('/users/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return res.data.result; // Trả về URL ảnh mới
+  } catch (err) {
+    console.error("Upload ảnh lỗi:", err);
+    throw err;
+  }
+}
+
 export const logout = () => {
   clearAccountData();
 };
