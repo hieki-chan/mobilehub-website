@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getOrders } from '../api/orderApi';
+import { cancelOrder, getOrders } from '../api/orderApi';
 import '../styles/pages/order-history.css';
 
 export default function OrderHistory() {
@@ -9,6 +9,8 @@ export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState('ALL');
+  const [cancelingOrderId, setCancelingOrderId] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     async function fetchOrders() {
@@ -53,6 +55,20 @@ export default function OrderHistory() {
   ];
 
   const filteredOrders = activeStatus === 'ALL' ? orders : orders.filter(o => o.status === activeStatus);
+  const sortedOrders = [...filteredOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const handleCancel = async (orderId) => {
+    try {
+      await cancelOrder(orderId, cancelReason);
+      setOrders(prev =>
+        prev.map(o => o.id === orderId ? { ...o, status: 'CANCELLED' } : o)
+      );
+      setCancelingOrderId(null);
+      setCancelReason('');
+    } catch (err) {
+      console.error('Hủy đơn thất bại', err);
+    }
+  }
 
   return (
     <div className="order-container">
@@ -69,10 +85,10 @@ export default function OrderHistory() {
         ))}
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <div className="no-orders">Không có đơn hàng nào</div>
       ) : (
-        filteredOrders.map(order => (
+        sortedOrders.map(order => (
           <div key={order.id} className="order-card">
 
             <div className="order-status-box">
@@ -121,6 +137,48 @@ export default function OrderHistory() {
 
             <div className="order-actions">
               <button className="order-buy-again">Mua Lại</button>
+
+              {order.status === 'PENDING' && (
+                <>
+                  {!cancelingOrderId && (
+                    <button
+                      className="order-cancel"
+                      onClick={() => setCancelingOrderId(order.id)}
+                      style={{ marginLeft: '8px', backgroundColor: '#f44336', color: '#fff' }}
+                    >
+                      Hủy đơn
+                    </button>
+                  )}
+
+                  {cancelingOrderId === order.id && (
+                    <div className="cancel-form">
+                      <input
+                        type="text"
+                        placeholder="Nhập lý do hủy..."
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="cancel-input"
+                      />
+                      <button
+                        className="cancel-ok"
+                        onClick={() => handleCancel(order.id)}
+                        disabled={!cancelReason.trim()}
+                      >
+                        OK
+                      </button>
+                      <button
+                        className="cancel-cancel"
+                        onClick={() => {
+                          setCancelingOrderId(null);
+                          setCancelReason('');
+                        }}
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
           </div>

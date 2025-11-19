@@ -75,7 +75,7 @@ export default function Cart() {
       </main>
     )
   }
-
+  
   let totalInWords = ''
   const [intPart, decimalPart] = cartTotal.toString().split('.')
   totalInWords = getText(parseInt(intPart))

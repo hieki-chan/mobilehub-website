@@ -31,3 +31,8 @@ export const getOrders = async () => {
     throw error.response?.data || error
   }
 }
+
+export const cancelOrder = async (orderId, reason) => {
+  const res = await api.put(`${BASE_URL}/${orderId}/cancel`, {reason});
+  return res.data;
+};
