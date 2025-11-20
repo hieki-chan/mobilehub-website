@@ -132,7 +132,7 @@ export const getUserProfile = async () => {
     return res.data.result; // Giả định API trả về { result: { ...user } }
   } catch (err) {
     console.error("Lấy thông tin thất bại:", err);
-    throw err;
+    return null;
   }
 };
 
@@ -151,7 +151,7 @@ export const updateProfile = async (userData) => {
     return res.data;
   } catch (err) {
     console.error("Cập nhật thất bại:", err);
-    throw err;
+    return null;
   }
 };
 
@@ -168,7 +168,7 @@ export const uploadAvatar = async (file) => {
     return res.data.result; // Trả về URL ảnh mới
   } catch (err) {
     console.error("Upload ảnh lỗi:", err);
-    throw err;
+    return null;
   }
 }
 

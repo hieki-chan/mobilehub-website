@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { getUserProfile, updateProfile, uploadAvatar } from '../../api/authApi'
 import '../../styles/components/profile/user-info.css'
+import CCCDVerificationForm from '../cccd_verification/CCCDVerificationForm'
+import { getVerificationStatus } from '../../api/cccdVerifyApi'
 
 export default function UserInfo() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  
+  const [cccdVerified, setCccdVerified] = useState(false)
+  const [showCCCDModal, setShowCCCDModal] = useState(false)
+
   // State quản lý dữ liệu form
   const [formData, setFormData] = useState({
     fullName: '',
@@ -28,23 +32,25 @@ export default function UserInfo() {
         const user = await getUserProfile()
         if (user) {
           setFormData({
-            fullName: user.name || '', // Mapping field từ API
+            fullName: user.name || '',
             email: user.email || '',
             phone: user.phone || '',
             gender: user.gender || 'other',
-            dob: user.dob ? user.dob.split('T')[0] : '', // Cắt chuỗi ISO date
+            dob: user.dob ? user.dob.split('T')[0] : '',
             avatar: user.avatar || '/assets/anime.jpg'
           })
         }
+
+        // Gọi API CCCD trả true/false
+        const verified = await getVerificationStatus()
+        setCccdVerified(verified)
       } catch (error) {
         console.error("Lỗi tải thông tin:", error)
-        // Fallback nếu lỗi: lấy email từ localStorage
-        const savedEmail = localStorage.getItem('email');
-        if(savedEmail) setFormData(prev => ({...prev, email: savedEmail}))
       } finally {
         setLoading(false)
       }
     }
+
     fetchUser()
   }, [])
 
@@ -79,10 +85,10 @@ export default function UserInfo() {
       // 1. Nếu có chọn ảnh mới thì upload trước
       if (selectedFile) {
         try {
-            // Gọi API upload ảnh (nếu chưa có API upload thì bỏ qua bước này)
-            newAvatarUrl = await uploadAvatar(selectedFile);
+          // Gọi API upload ảnh (nếu chưa có API upload thì bỏ qua bước này)
+          newAvatarUrl = await uploadAvatar(selectedFile);
         } catch (err) {
-            console.warn("Upload ảnh thất bại, vẫn lưu thông tin text.");
+          console.warn("Upload ảnh thất bại, vẫn lưu thông tin text.");
         }
       }
 
@@ -96,11 +102,11 @@ export default function UserInfo() {
       }
 
       await updateProfile(payload)
-      
+
       setFormData(prev => ({ ...prev, avatar: newAvatarUrl }))
       setMessage({ type: 'success', text: 'Cập nhật hồ sơ thành công!' })
       setIsEditing(false)
-      
+
     } catch (error) {
       setMessage({ type: 'error', text: 'Cập nhật thất bại. Vui lòng thử lại sau.' })
     } finally {
@@ -121,9 +127,9 @@ export default function UserInfo() {
         {/* CỘT TRÁI: AVATAR */}
         <div className="avatar-section">
           <div className="avatar-wrapper">
-            <img 
-              src={previewAvatar || formData.avatar || '/assets/anime.jpg'} 
-              alt="Avatar" 
+            <img
+              src={previewAvatar || formData.avatar || '/assets/anime.jpg'}
+              alt="Avatar"
               className="avatar-img"
               onError={e => e.target.src = '/assets/anime.jpg'}
             />
@@ -143,10 +149,10 @@ export default function UserInfo() {
         <div className="info-form">
           <div className="form-group">
             <label>Họ và tên</label>
-            <input 
-              type="text" 
-              name="fullName" 
-              value={formData.fullName} 
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
               onChange={handleChange}
               disabled={!isEditing}
               className={isEditing ? 'editable' : ''}
@@ -157,10 +163,10 @@ export default function UserInfo() {
           <div className="form-group">
             <label>Email</label>
             <div className="input-with-icon">
-              <input 
-                type="email" 
-                name="email" 
-                value={formData.email} 
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
                 disabled={true} // Email thường không cho sửa
                 className="disabled-input"
               />
@@ -170,10 +176,10 @@ export default function UserInfo() {
 
           <div className="form-group">
             <label>Số điện thoại</label>
-            <input 
-              type="tel" 
-              name="phone" 
-              value={formData.phone} 
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
               onChange={handleChange}
               disabled={!isEditing}
               className={isEditing ? 'editable' : ''}
@@ -198,15 +204,31 @@ export default function UserInfo() {
 
           <div className="form-group">
             <label>Ngày sinh</label>
-            <input 
-              type="date" 
-              name="dob" 
-              value={formData.dob} 
+            <input
+              type="date"
+              name="dob"
+              value={formData.dob}
               onChange={handleChange}
               disabled={!isEditing}
               className={isEditing ? 'editable' : ''}
             />
           </div>
+
+          <div className="form-group">
+            <label>Số CCCD</label>
+            <span className={`cccd-status ${cccdVerified ? 'verified' : 'unverified'}`}>
+              {cccdVerified ? 'Đã xác thực ✅' : 'Chưa xác thực ❌'}
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setShowCCCDModal(true)}
+            >
+              <i className="fa fa-id-card"></i> Xác thực căn cước
+            </button>
+          </div>
+
+          {showCCCDModal && <CCCDVerificationForm onClose={() => setShowCCCDModal(false)} />}
 
           {/* Thông báo */}
           {message.text && (
@@ -225,10 +247,10 @@ export default function UserInfo() {
             ) : (
               <>
                 <button className="btn btn-outline" onClick={() => {
-                    setIsEditing(false);
-                    setPreviewAvatar(null);
-                    setMessage({type:'', text:''});
-                    // Có thể gọi lại fetchUser() để reset data nếu cần
+                  setIsEditing(false);
+                  setPreviewAvatar(null);
+                  setMessage({ type: '', text: '' });
+                  // Có thể gọi lại fetchUser() để reset data nếu cần
                 }}>
                   Hủy
                 </button>
