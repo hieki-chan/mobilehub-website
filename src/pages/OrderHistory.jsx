@@ -155,7 +155,7 @@ export default function OrderHistory() {
                           })
                         }
                       >
-                        {userRating ? 'Sửa đánh giá' : 'Đánh giá'}
+                        {userRating ? 'Xem đánh giá' : 'Đánh giá'}
                       </button>
                     )}
                   </div>
