@@ -35,12 +35,12 @@ export default function Register() {
 
     try {
       const res = await register(email.trim(), username.trim(), password)
-
-      if (res !== "register") {
-        setError(typeof res === "string" ? res : "Đăng ký thất bại")
-        setLoading(false)
-        return
-      }
+      // console.log(res);
+      // if (res !== "register") {
+      //   setError(typeof res === "string" ? res : "Đăng ký thất bại")
+      //   setLoading(false)
+      //   return
+      // }
 
       navigate("/verify-otp")
 
