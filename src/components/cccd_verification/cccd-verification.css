@@ -1,427 +1,293 @@
-.cccd-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-    backdrop-filter: blur(2px);
+/* --- CSS Biệt lập cho CCCD Verification (V2) --- */
+
+/* Overlay mờ che toàn màn hình */
+.cccd-v2-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: 99999; /* Cao hơn mọi thứ */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: cccdFadeIn 0.2s ease-out;
 }
 
-.cccd-modal-container {
-    background: white;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
-    position: relative;
-    z-index: 100000;
+/* Hộp Modal chính */
+.cccd-v2-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 800px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: cccdSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.modal-header {
-    padding: 24px 32px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(135deg, #eb3740 0%, #a24b65 100%);
-    color: white;
+/* Header */
+.cccd-v2-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
 }
 
-.modal-header h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
+.cccd-v2-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
 }
 
-.close-btn {
-    background: transparent;
-    border: none;
-    font-size: 32px;
-    color: white;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
+.cccd-v2-title i {
+  color: var(--brand-primary, #dd0000);
 }
 
-.close-btn:hover {
-    transform: scale(1.1);
+.cccd-v2-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.steps-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 32px 24px;
-    background: #f9fafb;
+.cccd-v2-close-btn:hover {
+  background: #e5e7eb;
+  color: #111;
+  transform: rotate(90deg);
 }
 
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+/* Body */
+.cccd-v2-body {
+  padding: 32px;
+  overflow-y: auto;
+  max-height: 80vh;
+  background: #fff;
 }
 
-.step-number {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #e5e7eb;
-    color: #6b7280;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 16px;
-    transition: all 0.3s;
+.cccd-v2-instruction {
+  text-align: center;
+  color: #4b5563;
+  margin-bottom: 32px;
+  font-size: 15px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
 }
 
-.step.active .step-number {
-    background: linear-gradient(135deg, #ea667c 0%, #a24b4b 100%);
-    color: white;
+/* Grid chứa 2 ô upload */
+.cccd-v2-upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
-.step-label {
-    font-size: 14px;
-    color: #6b7280;
-    font-weight: 500;
+/* Ô Upload từng mặt */
+.cccd-v2-upload-zone {
+  position: relative;
+  width: 100%;
+  /* Tỷ lệ khung hình giống thẻ CCCD thật */
+  aspect-ratio: 85.6 / 54; 
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.step.active .step-label {
-    color: #ea666d;
+.cccd-v2-upload-zone:hover {
+  border-color: var(--brand-primary, #dd0000);
+  background: #fff1f2;
 }
 
-.step-line {
-    width: 80px;
-    height: 2px;
-    background: #e5e7eb;
-    margin: 0 16px;
-    margin-bottom: 32px;
-    transition: all 0.3s;
+.cccd-v2-upload-zone.has-image {
+  border-style: solid;
+  border-color: var(--brand-primary, #dd0000);
+  background: #000;
+  cursor: default;
 }
 
-.step-line.active {
-    background: linear-gradient(90deg, #e64242 0%, #a24b59 100%);
+/* Nội dung bên trong ô upload (khi chưa có ảnh) */
+.cccd-v2-placeholder {
+  text-align: center;
+  pointer-events: none;
 }
 
-.modal-body {
-    padding: 32px;
-    max-height: 500px;
-    overflow-y: auto;
+.cccd-v2-icon {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 12px;
+  transition: color 0.2s;
 }
 
-.upload-section {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+.cccd-v2-upload-zone:hover .cccd-v2-icon {
+  color: var(--brand-primary, #dd0000);
 }
 
-.upload-instruction {
-    text-align: center;
-    color: #4b5563;
-    font-size: 16px;
-    margin-bottom: 8px;
+.cccd-v2-label {
+  font-weight: 600;
+  color: #374151;
+  display: block;
+  font-size: 16px;
 }
 
-.upload-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+.cccd-v2-sub {
+  font-size: 13px;
+  color: #9ca3af;
 }
 
-.upload-box {
-    position: relative;
-    /* Preferred: maintain 856x540 ratio. Use aspect-ratio where supported. */
-    aspect-ratio: 856/540;
-    width: 100%;
+/* Ảnh preview */
+.cccd-v2-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.file-input {
-    display: none;
+/* Nút xóa ảnh/chụp lại */
+.cccd-v2-remove-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.upload-label {
-    display: block;
-    position: absolute;
-    inset: 0;
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s;
-    overflow: hidden;
+.cccd-v2-upload-zone:hover .cccd-v2-remove-overlay {
+  opacity: 1;
 }
 
-/* Fallback for browsers that don't support aspect-ratio: create intrinsic height */
-.upload-box::before {
-    content: '';
-    display: block;
-    padding-top: calc(540 / 856 * 100%);
+.cccd-v2-btn-retake {
+  background: #fff;
+  color: #111;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateY(10px);
+  transition: all 0.2s;
 }
 
-.crop-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 110000;
+.cccd-v2-upload-zone:hover .cccd-v2-btn-retake {
+  transform: translateY(0);
 }
 
-.crop-modal {
-    background: white;
-    border-radius: 12px;
-    width: 92%;
-    max-width: 980px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* Footer */
+.cccd-v2-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
 }
 
-.crop-container {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
+.cccd-v2-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
 }
 
-.crop-container img {
-    display: block;
-    max-width: 100%;
-    height: auto;
+.cccd-v2-btn-cancel {
+  background: #fff;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
 }
 
-.crop-controls {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding-top: 8px;
+.cccd-v2-btn-cancel:hover {
+  background: #f9fafb;
+  color: #111;
 }
 
-.upload-label:hover {
-    border-color: #ea6666;
-    background: #f9fafb;
+.cccd-v2-btn-submit {
+  background: var(--brand-primary, #dd0000);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(221, 0, 0, 0.25);
 }
 
-.upload-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.cccd-v2-btn-submit:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.cccd-v2-btn-submit:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Loading UI */
+.cccd-v2-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.cccd-v2-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--brand-primary, #dd0000);
+  border-radius: 50%;
+  animation: cccdSpin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* Animations */
+@keyframes cccdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cccdSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes cccdSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Responsive Mobile */
+@media (max-width: 640px) {
+  .cccd-v2-upload-grid {
+    grid-template-columns: 1fr; /* Xếp chồng lên nhau trên mobile */
+  }
+  
+  .cccd-v2-container {
+    max-height: 100vh;
     height: 100%;
-    gap: 8px;
-    color: #6b7280;
-}
-
-.upload-placeholder svg {
-    color: #9ca3af;
-}
-
-.upload-placeholder span {
-    font-weight: 500;
-}
-
-.upload-hint {
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.image-preview {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.image-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.image-overlay {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: white;
-    border-radius: 50%;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.info-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.info-field.full-width {
-    grid-column: 1 / -1;
-}
-
-.info-field label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-}
-
-.info-field input {
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-    background: #f9fafb;
-    color: #6b7280;
-}
-
-.loading-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    padding: 64px 32px;
-}
-
-.spinner {
-    animation: spin 1s linear infinite;
-    color: #667eea;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.loading-section p {
-    font-size: 16px;
-    color: #4b5563;
-    font-weight: 500;
-}
-
-.result-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 64px 32px;
-}
-
-.result-section h3 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-}
-
-.result-section.failed h3 {
-    color: #ef4444;
-}
-
-.result-section p {
-    color: #6b7280;
-    text-align: center;
-    margin: 0;
-}
-
-.retry-btn {
-    margin-top: 16px;
-    padding: 12px 32px;
-    background: linear-gradient(135deg, #ea667c 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.retry-btn:hover {
-    transform: translateY(-2px);
-}
-
-.modal-footer {
-    padding: 24px 32px;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    background: #f9fafb;
-}
-
-.btn-secondary,
-.btn-primary {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-}
-
-.btn-secondary {
-    background: white;
-    color: #4b5563;
-    border: 1px solid #d1d5db;
-}
-
-.btn-secondary:hover {
-    background: #f9fafb;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #ea668e 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-primary:disabled:hover {
-    transform: none;
-    box-shadow: none;
+    border-radius: 0;
+  }
+  
+  .cccd-v2-upload-zone {
+    aspect-ratio: auto; /* Tự do chiều cao trên mobile nếu cần */
+    height: 200px;
+  }
 }
