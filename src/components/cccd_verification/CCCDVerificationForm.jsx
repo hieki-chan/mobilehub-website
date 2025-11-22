@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { verifyCCCD } from '../../api/cccdVerifyApi';
 import './cccd-verification.css';
+import { useToast } from '../ToastProvider';
 
 export default function CCCDVerificationForm({ onClose }) {
   // State quản lý ảnh
@@ -47,6 +48,7 @@ export default function CCCDVerificationForm({ onClose }) {
   };
 
   // Gửi dữ liệu
+  const toast = useToast()
   const handleSubmit = async () => {
     if (!frontFile || !backFile) return;
 
@@ -55,11 +57,11 @@ export default function CCCDVerificationForm({ onClose }) {
       // Gọi API (giả định hàm verifyCCCD nhận vào 2 file object)
       await verifyCCCD(frontFile, backFile);
       
-      alert('Gửi xác thực thành công! Hệ thống đang xử lý.');
+      toast.success('Gửi xác thực thành công! Hệ thống đang xử lý.');
       onClose(); // Đóng modal
     } catch (error) {
       console.error(error);
-      alert('Có lỗi xảy ra khi xác thực. Vui lòng thử lại.');
+      toast.error('Có lỗi xảy ra khi xác thực. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }

@@ -8,6 +8,7 @@ import { getDefaultAddress } from "../api/addressApi"
 import { createOrder } from "../api/orderApi"
 import '../styles/pages/checkout.css'
 import { getText } from 'number-to-text-vietnamese'
+import { useToast } from '../components/ToastProvider'
 
 export default function Checkout() {
   const navigate = useNavigate()
@@ -73,9 +74,10 @@ export default function Checkout() {
   const totalInWordsFormatted =
     totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
 
+  const toast = useToast()
   const handleSubmit = async () => {
     if (!selectedAddress) {
-      alert("Vui lòng chọn địa chỉ giao hàng")
+      toast.warning("Vui lòng chọn địa chỉ giao hàng")
       return
     }
 
@@ -95,12 +97,12 @@ export default function Checkout() {
       setLoading(true)
       await createOrder(order)
 
-      alert("Đặt hàng thành công!")
+      toast.success("Đặt hàng thành công!")
       navigate("/")
 
     } catch (error) {
       console.error(error)
-      alert("Đặt hàng thất bại!")
+      toast.error("Đặt hàng thất bại!")
     } finally {
       setLoading(false)
     }

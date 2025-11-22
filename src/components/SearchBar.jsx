@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { products as mockProducts } from '../data/products'
 import { useSearchDebounce } from '../hooks/useSearchDebounce'
 import { useSearchKeyboard } from '../hooks/useSearchKeyboard'
 import SearchInput from './SearchInput'
@@ -8,11 +7,9 @@ import SearchSuggestions from './SearchSuggestions'
 import '../styles/search-bar.css'
 
 export default function SearchBar({ 
-  placeholder = 'Tìm kiếm sản phẩm...', 
-  products 
+  placeholder = 'Tìm kiếm sản phẩm...' 
 }) {
   const navigate = useNavigate()
-  const productList = products || mockProducts || []
   
   // State
   const [query, setQuery] = useState('')
@@ -23,8 +20,8 @@ export default function SearchBar({
   const inputRef = useRef(null)
   const containerRef = useRef(null)
 
-  // Custom hooks
-  const { suggestions, isSearching } = useSearchDebounce(query, productList)
+  // Custom hooks - Không cần truyền danh sách sản phẩm mock nữa
+  const { suggestions, isSearching } = useSearchDebounce(query)
 
   // Handlers
   const handleSubmitSearch = useCallback((term) => {

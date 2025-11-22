@@ -5,6 +5,7 @@ import { cancelOrder, getOrders } from '../api/orderApi';
 import { createRating, getProductRating, updateRating } from '../api/ratingApi';
 import ReviewForm from '../components/review/ReviewForm';
 import '../styles/pages/order-history.css';
+import { useToast } from '../components/ToastProvider';
 
 export default function OrderHistory() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function OrderHistory() {
   const [reviewingItem, setReviewingItem] = useState(null);
   const [userRatings, setUserRatings] = useState({});
 
+  const toast = useToast()
   // Load orders
   useEffect(() => {
     async function fetchOrders() {
@@ -281,10 +283,10 @@ export default function OrderHistory() {
               }));
 
               setReviewingItem(null);
-              alert('Đánh giá thành công!');
+              toast.success('Đánh giá thành công!');
             } catch (err) {
               console.error('Lỗi đánh giá:', err);
-              alert('Không gửi được đánh giá!');
+              toast.error('Không gửi được đánh giá!');
             }
           }}
           onClose={() => setReviewingItem(null)}

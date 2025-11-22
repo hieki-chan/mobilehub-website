@@ -4,6 +4,7 @@ import { searchProducts } from '../api/productApi'
 import ProductCard from '../components/home/ProductCard'
 import QuickViewModal from '../components/home/QuickViewModal'
 import '../styles/pages/search-results.css'
+import { useToast } from '../components/ToastProvider'
 
 function useQuery() {
   return new URLSearchParams(useLocation().search)
@@ -124,10 +125,10 @@ export default function SearchResults() {
     updateParams({ priceRange: 'all', sortBy: 'default', brands: [], discountOnly: false, page: 0 })
     fetchProducts(0)
   }
-
+  const toast = useToast()
   const openQuickView = (id) => {
     const p = pageData.content.find((x) => String(x.id) === String(id));
-    if (!p) return alert("Không tìm thấy sản phẩm");
+    if (!p) return toast.error("Không tìm thấy sản phẩm");
     setModalProduct(p);
     setModalOpen(true);
     document.body.style.overflow = "hidden";

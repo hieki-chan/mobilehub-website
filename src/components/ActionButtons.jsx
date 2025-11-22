@@ -1,10 +1,13 @@
+import { useToast } from "./ToastProvider"
+
 export default function ActionButtons({ product, qty, capacity, color, onAddCart, onBuyNow, onInstallmentBuy }) {
+  const toast = useToast()
 
   const share = () => {
     if (navigator.share) {
       navigator.share({ title: product.name, text: product.desc, url: location.href }).catch(() => { })
     } else {
-      navigator.clipboard?.writeText(location.href).then(() => alert('Đã sao chép liên kết'))
+      navigator.clipboard?.writeText(location.href).then(() => toast.success('Đã sao chép liên kết!'))
     }
   }
 

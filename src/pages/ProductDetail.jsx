@@ -13,6 +13,7 @@ import { formatPrice } from '../utils/formatPrice'
 import '../styles/pages/product-detail.css'
 import { getProductDetails } from '../api/productApi'
 import { getGroupedSpecs } from '../data/products'
+import { useToast } from '../components/ToastProvider'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -61,6 +62,7 @@ export default function ProductDetail() {
 
   const groupedSpecs = getGroupedSpecs(p.spec, selectedVariant)
 
+  const toast = useToast()
   const onAddCart = async () => {
     if (adding) return
     setAdding(true)
@@ -73,10 +75,11 @@ export default function ProductDetail() {
         color: color         // Thêm cho nhất quán
       })
       // alert('Đã thêm vào giỏ hàng') // <<< ĐÃ XÓA DÒNG NÀY
-      navigate('/cart') // <<< THÊM DÒNG NÀY ĐỂ CHUYỂN TRANG
+      //navigate('/cart') // <<< THÊM DÒNG NÀY ĐỂ CHUYỂN TRANG
+      toast.success('Đã thêm sản phẩm vào giỏ hàng')
     } catch (err) {
       console.error(err)
-      alert('Có lỗi khi thêm sản phẩm vào giỏ')
+      toast.error('Có lỗi khi thêm sản phẩm vào giỏ')
     } finally {
       setAdding(false)
     }
@@ -96,7 +99,7 @@ export default function ProductDetail() {
       navigate('/cart')
     } catch (err) {
       console.error(err)
-      alert('Có lỗi khi thêm sản phẩm vào giỏ')
+      toast.error('Có lỗi khi thêm sản phẩm vào giỏ')
     } finally {
       setAdding(false)
     }
@@ -174,7 +177,7 @@ export default function ProductDetail() {
                 if (navigator.share) {
                   navigator.share({ title: p.name, text: p.description, url: location.href }).catch(() => { })
                 } else {
-                  navigator.clipboard?.writeText(location.href).then(() => alert('Đã sao chép liên kết'))
+                  navigator.clipboard?.writeText(location.href).then(() => toast.success('Đã sao chép liên kết'))
                 }
               }}
             >

@@ -4,6 +4,7 @@ import { getProductDetails } from '../api/productApi'
 import { formatPrice } from '../utils/formatPrice'
 import { getDefaultAddress } from '../api/addressApi'
 import '../styles/pages/installment.css'
+import { useToast } from '../components/ToastProvider'
 
 // --- MOCK DATA CÔNG TY TÀI CHÍNH ---
 // Mỗi công ty có quy định về trả trước (min-max) và kỳ hạn hỗ trợ
@@ -157,14 +158,15 @@ export default function Installment() {
   }
 
   // Xử lý submit ở Bước 2
+  const toast = useToast()
   const handleFinalSubmit = (e) => {
     e.preventDefault()
     if (!userInfo.fullName || !userInfo.phone || !userInfo.idCard || !userInfo.address) {
-      alert('Vui lòng điền đầy đủ thông tin!')
+      toast.warning('Vui lòng điền đầy đủ thông tin!')
       return
     }
 
-    alert(`Đăng ký trả góp thành công!\nHồ sơ của bạn đang được ${selectedCompany.name} xét duyệt.\nChúng tôi sẽ liên hệ lại số ${userInfo.phone} trong ít phút.`)
+    toast.success(`Đăng ký trả góp thành công!\nHồ sơ của bạn đang được ${selectedCompany.name} xét duyệt.\nChúng tôi sẽ liên hệ lại số ${userInfo.phone} trong ít phút.`)
     navigate('/')
   }
 
