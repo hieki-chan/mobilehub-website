@@ -123,7 +123,7 @@ export default function Home() {
               style={{
                 backgroundImage: "url('http://localhost:5173/carousel3.jpg')",
               }}
-              
+
             >
               <div className="slide-content">
                 <h2>Flash Sale — Số lượng có hạn</h2>

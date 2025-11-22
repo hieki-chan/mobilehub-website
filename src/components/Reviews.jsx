@@ -1,52 +1,67 @@
-// src/components/Reviews.jsx
-import React, { useState } from 'react'
-import useReviews from '../hooks/useReviews'
+import React, { useEffect, useState } from 'react'
+import { getRatingsByProduct } from '../api/ratingApi'
 
 export default function Reviews({ productId }) {
-  const { list, add } = useReviews(productId)
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name:'', rating:5, comment:'' })
+  const [list, setList] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const submit = () => {
-    if (!form.name) return alert('Nhập tên'); add({ ...form }); setForm({ name:'', rating:5, comment:'' }); setOpen(false); alert('Cảm ơn đánh giá của bạn!')
+  useEffect(() => {
+    async function fetchRatings() {
+      try {
+        const data = await getRatingsByProduct({ productId, page: 0, size: 10 })
+        setList(data.items || [])
+      } catch (err) {
+        console.error('Lỗi load đánh giá:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRatings()
+  }, [productId])
+
+  if (loading) return <div>Đang tải đánh giá...</div>
+
+  const formatDate = (iso) => new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  const renderAvatar = (name) => {
+    const char = name?.[0]?.toUpperCase() || '?'
+    return (
+      <div style={{
+        width: 28, height: 28, borderRadius: '50%', background: '#26aa99',
+        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, fontWeight: 'bold'
+      }}>
+        {char}
+      </div>
+    )
   }
 
   return (
     <div className="reviews">
       <h3>Đánh giá</h3>
       <div id="reviewsList">
-        {!list.length ? <div className="muted">Chưa có đánh giá nào. Hãy là người đầu tiên!</div> :
-          list.map((r,i) => (
-            <div key={i} style={{ background:'#fff', padding:12, borderRadius:8, boxShadow:'0 6px 18px rgba(16,24,40,0.04)', marginBottom:8 }}>
-              <div style={{ display:'flex', gap:8, alignItems:'center' }}><strong>{r.name}</strong><div className="muted" style={{ fontSize:13 }}> - {'★'.repeat(r.rating)}</div></div>
-              <div className="muted" style={{ marginTop:6 }}>{r.comment}</div>
+        {!list.length ? <div className="muted">Chưa có đánh giá nào.</div> :
+          list.map((r, i) => (
+            <div key={i} style={{ background: '#fff', padding: 12, borderRadius: 8, boxShadow: '0 6px 18px rgba(16,24,40,0.04)', marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {renderAvatar(r.username || `Người dùng ${r.userId}`)}
+                <strong>{r.username || `Người dùng ${r.userId}`}</strong>
+                <div className="muted" style={{ fontSize: 13 }}> - {'★'.repeat(r.stars)}</div>
+                <div className="muted" style={{ fontSize: 12, marginLeft: 'auto' }}>{formatDate(r.createdAt)}</div>
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>{r.comment}</div>
+              {r.reply && (
+                <div style={{ marginTop: 6, padding: 8, background: '#f5f5f5', borderRadius: 6, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {renderAvatar(r.reply.adminName || 'Admin')}
+                  <div>
+                    <strong>{r.reply.adminName || 'Admin'}:</strong> {r.reply.content} <span style={{ fontSize: 11, color: '#666', marginLeft: 4 }}>({formatDate(r.reply.createdAt)})</span>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         }
       </div>
-
-      <div className="write-review" style={{ marginTop:12 }}>
-        <button className="btn btn-primary" onClick={() => setOpen(true)}>Viết đánh giá</button>
-      </div>
-
-      {open && (
-        <div className="modal-overlay open" onClick={(e)=> e.target.classList.contains('modal-overlay') && setOpen(false)}>
-          <div className="modal">
-            <button className="modal-close" onClick={()=>setOpen(false)}>&times;</button>
-            <div className="modal-body">
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                <input placeholder="Tên của bạn" value={form.name} onChange={e=>setForm(f=>({...f, name:e.target.value}))} />
-                <input type="number" min="1" max="5" value={form.rating} onChange={e=>setForm(f=>({...f, rating: Number(e.target.value)}))} />
-                <textarea placeholder="Nội dung đánh giá" value={form.comment} onChange={e=>setForm(f=>({...f, comment:e.target.value}))} />
-                <div style={{ display:'flex', gap:8 }}>
-                  <button className="btn btn-primary" onClick={submit}>Gửi</button>
-                  <button className="btn btn-secondary" onClick={()=>setOpen(false)}>Hủy</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

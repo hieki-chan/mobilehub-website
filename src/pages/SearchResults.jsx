@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { products as mockProducts } from '../data/products'
+import { searchProducts } from '../api/productApi'
 import ProductCard from '../components/home/ProductCard'
+import QuickViewModal from '../components/home/QuickViewModal'
 import '../styles/pages/search-results.css'
 
 function useQuery() {
@@ -9,63 +10,77 @@ function useQuery() {
 }
 
 export default function SearchResults() {
-  const q = useQuery().get('q') || ''
-  const term = q.trim().toLowerCase()
+  const navigate = useNavigate()
+  const query = useQuery()
 
-  // State cho filters
-  const [priceRange, setPriceRange] = useState('all')
-  const [sortBy, setSortBy] = useState('default')
-  const [showFilters, setShowFilters] = useState(true)
+  // --- URL params ---
+  const q = query.get('q') || ''
+  const priceRangeParam = query.get('priceRange') || 'all'
+  const sortByParam = query.get('sortBy') || 'default'
+  const pageParam = parseInt(query.get('page') || '0', 10)
+  const brandsParam = query.get('brands') ? query.get('brands').split(',') : []
+  const discountOnlyParam = query.get('discountOnly') === 'true'
+
+  // --- State ---
+  const [pageData, setPageData] = useState({ content: [], totalPages: 1, number: 0 })
+  const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(pageParam)
+  const [size] = useState(10)
+  const [priceRange, setPriceRange] = useState(priceRangeParam)
+  const [brands, setBrands] = useState(brandsParam)
+  const [discountOnly, setDiscountOnly] = useState(discountOnlyParam)
+  const [sortBy, setSortBy] = useState(sortByParam)
+
+  // Quick View
   const [modalOpen, setModalOpen] = useState(false)
   const [modalProduct, setModalProduct] = useState(null)
 
-  // Tìm kiếm sản phẩm
-  const searchResults = useMemo(() => {
-    if (!term) return []
-    return (mockProducts || []).filter(p => 
-      p.name.toLowerCase().includes(term) ||
-      p.desc?.toLowerCase().includes(term)
-    )
-  }, [term])
+  // --- Update URL params ---
+  const updateParams = (updates) => {
+    const params = new URLSearchParams(window.location.search)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
+        params.delete(key)
+      } else if (Array.isArray(value)) {
+        params.set(key, value.join(','))
+      } else {
+        params.set(key, value)
+      }
+    })
+    navigate({ search: params.toString() })
+  }
 
-  // Lọc theo giá
-  const filteredResults = useMemo(() => {
-    let filtered = [...searchResults]
-
-    // Lọc theo khoảng giá
-    if (priceRange !== 'all') {
-      filtered = filtered.filter(p => {
-        const price = p.price || 0
-        switch (priceRange) {
-          case 'under5':
-            return price < 5000000
-          case '5to10':
-            return price >= 5000000 && price < 10000000
-          case '10to20':
-            return price >= 10000000 && price < 20000000
-          case '20to30':
-            return price >= 20000000 && price < 30000000
-          case 'over30':
-            return price >= 30000000
-          default:
-            return true
-        }
+  // --- Fetch products ---
+  const fetchProducts = async (pageToFetch = page) => {
+    setLoading(true)
+    try {
+      const res = await searchProducts({
+        q,
+        page: pageToFetch,
+        size,
+        priceRange,
+        brands,
+        discountOnly,
+        sortBy,
       })
+      setPageData(res)
+      setPage(res.number)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    return filtered
-  }, [searchResults, priceRange])
-
-  // Sắp xếp
-  const sortedResults = useMemo(() => {
-    let sorted = [...filteredResults]
-
+  const getSortedProducts = () => {
+    if (!pageData.content) return []
+    const sorted = [...pageData.content]
     switch (sortBy) {
       case 'price-asc':
-        sorted.sort((a, b) => (a.price || 0) - (b.price || 0))
+        sorted.sort((a, b) => a.defaultVariant.price - b.defaultVariant.price)
         break
       case 'price-desc':
-        sorted.sort((a, b) => (b.price || 0) - (a.price || 0))
+        sorted.sort((a, b) => b.defaultVariant.price - a.defaultVariant.price)
         break
       case 'name-asc':
         sorted.sort((a, b) => a.name.localeCompare(b.name))
@@ -73,26 +88,49 @@ export default function SearchResults() {
       case 'name-desc':
         sorted.sort((a, b) => b.name.localeCompare(a.name))
         break
-      case 'default':
       default:
-        // Giữ nguyên thứ tự mặc định
         break
     }
-
     return sorted
-  }, [filteredResults, sortBy])
+  }
+
+  useEffect(() => {
+    fetchProducts(0)
+  }, [q, size, priceRange, brands, discountOnly, sortBy])
+
+  // --- Handlers ---
+  const handlePriceChange = (value) => {
+    setPriceRange(value)
+    updateParams({ priceRange: value, page: 0 })
+    fetchProducts(0)
+  }
+
+  const handleSortChange = (value) => {
+    setSortBy(value)
+    updateParams({ sortBy: value, page: 0 })
+    fetchProducts(0)
+  }
+
+  const handlePageChange = (newPage) => {
+    updateParams({ page: newPage })
+    fetchProducts(newPage)
+  }
 
   const handleResetFilters = () => {
     setPriceRange('all')
     setSortBy('default')
+    setBrands([])
+    setDiscountOnly(false)
+    updateParams({ priceRange: 'all', sortBy: 'default', brands: [], discountOnly: false, page: 0 })
+    fetchProducts(0)
   }
 
   const openQuickView = (id) => {
-    const p = sortedResults.find(x => String(x.id) === String(id))
-    if (!p) return
-    setModalProduct(p)
-    setModalOpen(true)
-    document.body.style.overflow = 'hidden'
+    const p = pageData.content.find((x) => String(x.id) === String(id));
+    if (!p) return alert("Không tìm thấy sản phẩm");
+    setModalProduct(p);
+    setModalOpen(true);
+    document.body.style.overflow = "hidden";
   }
 
   const closeQuickView = () => {
@@ -102,253 +140,129 @@ export default function SearchResults() {
   }
 
   const formatPrice = (v) => {
-    if (v == null || v === '') return ''
+    if (!v && v !== 0) return ''
     try { return new Intl.NumberFormat('vi-VN').format(Number(v)) + '₫' }
-    catch (e) { return String(v) + '₫' }
+    catch { return v + '₫' }
   }
 
   return (
     <main className="search-results-page">
       <div className="container">
+
+        {/* HEADER */}
         <div className="search-header">
           <div>
             <h3 className="section-title">Kết quả tìm kiếm</h3>
             <p className="muted">
-              Tìm cho: <strong>"{q}"</strong> · {sortedResults.length} kết quả
+              Tìm cho: <strong>"{q}"</strong> · {pageData.totalElements || pageData.content.length} kết quả
             </p>
           </div>
-          
-          <button 
-            className="btn btn-secondary toggle-filters-btn"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <i className={`fa fa-${showFilters ? 'times' : 'filter'}`}></i>
-            {showFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
-          </button>
         </div>
 
         <div className="search-content">
-          {/* Sidebar Filters */}
-          {showFilters && (
-            <aside className="filters-sidebar">
-              <div className="filter-section">
-                <h4 className="filter-title">
-                  <i className="fa fa-sort"></i>
-                  Sắp xếp
-                </h4>
-                <div className="filter-options">
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="sort" 
-                      value="default"
-                      checked={sortBy === 'default'}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    <span>Mặc định</span>
+
+          {/* SIDEBAR FILTER */}
+          <aside className="filters-sidebar">
+
+            {/* Sort */}
+            <div className="filter-section">
+              <h4 className="filter-title">
+                <i className="fa fa-sort"></i> Sắp xếp
+              </h4>
+              <div className="filter-options">
+                {['default', 'price-asc', 'price-desc', 'name-asc', 'name-desc'].map(v => (
+                  <label key={v} className="filter-option">
+                    <input type="radio" name="sort" value={v} checked={sortBy === v} onChange={e => handleSortChange(e.target.value)} />
+                    <span>{v === 'default' ? 'Mặc định' : v === 'price-asc' ? 'Giá thấp đến cao' : v === 'price-desc' ? 'Giá cao đến thấp' : v === 'name-asc' ? 'Tên A-Z' : 'Tên Z-A'}</span>
                   </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="sort" 
-                      value="price-asc"
-                      checked={sortBy === 'price-asc'}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    <span>Giá thấp đến cao</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="sort" 
-                      value="price-desc"
-                      checked={sortBy === 'price-desc'}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    <span>Giá cao đến thấp</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="sort" 
-                      value="name-asc"
-                      checked={sortBy === 'name-asc'}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    <span>Tên A-Z</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="sort" 
-                      value="name-desc"
-                      checked={sortBy === 'name-desc'}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    <span>Tên Z-A</span>
-                  </label>
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className="filter-section">
-                <h4 className="filter-title">
-                  <i className="fa fa-dollar-sign"></i>
-                  Khoảng giá
-                </h4>
-                <div className="filter-options">
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="all"
-                      checked={priceRange === 'all'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>Tất cả</span>
+            {/* Price filter */}
+            <div className="filter-section">
+              <h4 className="filter-title">
+                <i className="fa fa-dollar-sign"></i> Khoảng giá
+              </h4>
+              <div className="filter-options">
+                {[{ v: 'all', label: 'Tất cả' }, { v: 'under5', label: 'Dưới 5 triệu' }, { v: '5to10', label: '5 - 10 triệu' }, { v: '10to20', label: '10 - 20 triệu' }, { v: '20to30', label: '20 - 30 triệu' }, { v: 'over30', label: 'Trên 30 triệu' }].map(opt => (
+                  <label key={opt.v} className="filter-option">
+                    <input type="radio" name="price" value={opt.v} checked={priceRange === opt.v} onChange={e => handlePriceChange(e.target.value)} />
+                    <span>{opt.label}</span>
                   </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="under5"
-                      checked={priceRange === 'under5'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>Dưới 5 triệu</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="5to10"
-                      checked={priceRange === '5to10'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>5 - 10 triệu</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="10to20"
-                      checked={priceRange === '10to20'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>10 - 20 triệu</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="20to30"
-                      checked={priceRange === '20to30'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>20 - 30 triệu</span>
-                  </label>
-                  <label className="filter-option">
-                    <input 
-                      type="radio" 
-                      name="price" 
-                      value="over30"
-                      checked={priceRange === 'over30'}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                    />
-                    <span>Trên 30 triệu</span>
-                  </label>
-                </div>
+                ))}
               </div>
+            </div>
 
-              {(priceRange !== 'all' || sortBy !== 'default') && (
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ width: '100%', marginTop: 12 }}
-                  onClick={handleResetFilters}
-                >
-                  <i className="fa fa-refresh"></i>
-                  Xóa bộ lọc
-                </button>
-              )}
-            </aside>
-          )}
+            {(priceRange !== 'all' || sortBy !== 'default') && (
+              <button className="btn btn-secondary" style={{ width: '100%', marginTop: 12 }} onClick={handleResetFilters}>
+                <i className="fa fa-refresh"></i> Xóa bộ lọc
+              </button>
+            )}
 
-          {/* Results Grid */}
+          </aside>
+
+          {/* PRODUCTS GRID */}
           <div className="results-grid-container">
-            {sortedResults.length === 0 ? (
+            {loading ? (
+              <p>Đang tải...</p>
+            ) : pageData.content.length === 0 ? (
               <div className="no-results">
-                <i className="fa fa-search" style={{ fontSize: 48, marginBottom: 16, color: 'var(--muted)' }}></i>
+                <i className="fa fa-search"></i>
                 <h3>Không tìm thấy sản phẩm</h3>
                 <p className="muted">Không có sản phẩm nào phù hợp với "{q}"</p>
-                {(priceRange !== 'all' || sortBy !== 'default') && (
-                  <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={handleResetFilters}>
-                    Xóa bộ lọc và thử lại
-                  </button>
-                )}
               </div>
             ) : (
               <section className="products-grid">
-                {sortedResults.map(p => <ProductCard key={p.id} p={p} onQuickView={openQuickView} />)}
+                {getSortedProducts().map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    p={{
+                      id: p.id,
+                      name: p.name,
+                      price: p.defaultVariant.price,
+                      imageUrl: p.defaultVariant.imageUrl,
+                      discountInPercent: p.discountInPercent,
+                    }}
+                    onQuickView={openQuickView}
+                  />
+                ))}
               </section>
+            )}
+
+            {/* Pagination */}
+            {pageData.content.length > 0 && (
+              <div style={{ marginTop: 12, textAlign: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  disabled={pageData.number <= 0}
+                  onClick={() => handlePageChange(pageData.number - 1)}
+                >
+                  Prev
+                </button>
+
+                <span style={{ margin: '0 12px' }}>
+                  Trang {pageData.number + 1} / {pageData.totalPages}
+                </span>
+
+                <button
+                  className="btn btn-secondary"
+                  disabled={pageData.number + 1 >= pageData.totalPages}
+                  onClick={() => handlePageChange(pageData.number + 1)}
+                >
+                  Next
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Quick View Modal */}
-        {modalOpen && modalProduct && (
-          <div className="modal-overlay open" onClick={(e) => { if (e.target.className.includes('modal-overlay')) closeQuickView() }}>
-            <div className="modal" role="dialog" aria-modal="true">
-              <button className="modal-close" aria-label="Đóng" onClick={closeQuickView}>&times;</button>
-              <div className="modal-body">
-                <div className="modal-img">
-                  <img src={modalProduct.image || modalProduct.images?.[0] || '/no-image.png'} alt={modalProduct.name} />
-                </div>
-                <div className="modal-info">
-                  <h3>{modalProduct.name}</h3>
-                  <div className="price-row">
-                    <div className="price">{formatPrice(modalProduct.price)}</div>
-                    {modalProduct.oldPrice && <div className="old">{formatPrice(modalProduct.oldPrice)}</div>}
-                  </div>
-                  <div className="muted" style={{ marginTop: 8, marginBottom: 12 }}>{modalProduct.desc}</div>
-                  
-                  {modalProduct.specs && (
-                    <div style={{ marginBottom: 12, fontSize: 14 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 6 }}>Thông số nổi bật:</div>
-                      {modalProduct.specs['Cấu hình & Bộ nhớ'] && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {modalProduct.specs['Cấu hình & Bộ nhớ']['RAM'] && (
-                            <div className="muted">• RAM: {modalProduct.specs['Cấu hình & Bộ nhớ']['RAM']}</div>
-                          )}
-                          {modalProduct.specs['Cấu hình & Bộ nhớ']['Dung lượng lưu trữ'] && (
-                            <div className="muted">• Bộ nhớ: {modalProduct.specs['Cấu hình & Bộ nhớ']['Dung lượng lưu trữ']}</div>
-                          )}
-                        </div>
-                      )}
-                      {modalProduct.specs['Camera & Màn hình'] && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {modalProduct.specs['Camera & Màn hình']['Camera chính'] && (
-                            <div className="muted">• Camera: {modalProduct.specs['Camera & Màn hình']['Camera chính']}</div>
-                          )}
-                          {modalProduct.specs['Camera & Màn hình']['Màn hình'] && (
-                            <div className="muted">• Màn hình: {modalProduct.specs['Camera & Màn hình']['Màn hình']}</div>
-                          )}
-                        </div>
-                      )}
-                      {modalProduct.specs['Pin & Sạc'] && modalProduct.specs['Pin & Sạc']['Dung lượng pin'] && (
-                        <div className="muted">• Pin: {modalProduct.specs['Pin & Sạc']['Dung lượng pin']}</div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className="modal-actions">
-                    <a href={`/product/${modalProduct.id}`} className="btn btn-primary">
-                      Xem chi tiết
-                    </a>
-                    <button className="btn btn-secondary" onClick={closeQuickView}>Đóng</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Quick View */}
+        {modalOpen && (
+          <QuickViewModal
+            product={modalProduct}
+            onClose={closeQuickView}
+          />
         )}
       </div>
     </main>
