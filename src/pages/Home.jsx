@@ -77,8 +77,8 @@ export default function Home() {
   };
 
   const popularTerms = [
-    "Vphone Pro 6",
-    "Vphone X",
+    "Iphone 6s plus",
+    "Iphone X",
     "iPhone 17",
     "Samsung S25",
     "Pixel 9",
