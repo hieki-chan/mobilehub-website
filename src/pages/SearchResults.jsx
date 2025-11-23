@@ -18,7 +18,7 @@ export default function SearchResults() {
   const q = query.get('q') || ''
   const priceRangeParam = query.get('priceRange') || 'all'
   const sortByParam = query.get('sortBy') || 'default'
-  const pageParam = parseInt(query.get('page') || '0', 10)
+  const pageParam = parseInt(query.get('page') || '0', 12)
   const brandsParam = query.get('brands') ? query.get('brands').split(',') : []
   const discountOnlyParam = query.get('discountOnly') === 'true'
 
@@ -26,7 +26,7 @@ export default function SearchResults() {
   const [pageData, setPageData] = useState({ content: [], totalPages: 1, number: 0 })
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(pageParam)
-  const [size] = useState(10)
+  const [size] = useState(12)
   const [priceRange, setPriceRange] = useState(priceRangeParam)
   const [brands, setBrands] = useState(brandsParam)
   const [discountOnly, setDiscountOnly] = useState(discountOnlyParam)
