@@ -11,26 +11,36 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
-import ShopeeCart from "./pages/OrderHistory"
+import ShopeeCart from "./pages/OrderHistory";
 import SearchResults from "./pages/SearchResults";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
 import Installment from "./pages/Installment";
 import NotFound from "./pages/NotFound";
+import PayOSCheckout from "./pages/PayOSCheckout";
 import { verifyToken, logout } from "./api/authApi";
 
 export default function App() {
   const [isChecking, setIsChecking] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
 
-
   const location = useLocation();
 
+  // Những path cần ẩn FOOTER (như bạn đang làm)
   const hideFooterPaths = ["/product/", "/cart", "/search"];
 
+  // ✅ Những path cần ẩn CẢ HEADER + FOOTER
+  const hideLayoutPaths = ["/mock/payos/checkout"];
 
   const currentPath = location.pathname;
-  const hideFooter = hideFooterPaths.some((p) => currentPath.startsWith(p));
+
+  const hideFooter =
+    hideFooterPaths.some((p) => currentPath.startsWith(p)) ||
+    hideLayoutPaths.some((p) => currentPath.startsWith(p));
+
+  const hideHeader = hideLayoutPaths.some((p) =>
+    currentPath.startsWith(p)
+  );
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -49,26 +59,23 @@ export default function App() {
           const valid = await verifyToken(token);
 
           if (!valid) {
-            console.warn("⚠️ Token invalid or expired. Logging out...");
             logout();
-            setIsChecking(false)
+            setIsChecking(false);
             return;
           }
 
           setIsChecking(false);
           return;
         } catch (error) {
-          console.warn(`⚠️ Không thể kết nối server (lần ${i}/${maxRetries})...`);
           setRetryCount(i);
-
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((res) => setTimeout(res, 1000));
         }
       }
 
-      console.warn("❌ Kết nối thất bại sau 3 lần. Tự động đăng xuất.");
       logout();
       setIsChecking(false);
     };
+
     checkLogin();
   }, []);
 
@@ -76,7 +83,9 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Header />
+      {/* ✅ Ẩn Header ở trang PayOS mock */}
+      {!hideHeader && <Header />}
+
       <div style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -84,18 +93,25 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />}></Route>
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/order-history" element={<ShopeeCart />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/profile" element={<Profile />} />
+
+          {/* FORM THANH TOÁN */}
           <Route path="/checkout" element={<Checkout />} />
+
+          {/* MOCK PAYOS UI */}
+          <Route path="/mock/payos/checkout" element={<PayOSCheckout />} />
+
           <Route path="/installment" element={<Installment />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
 
+      {/* ✅ Ẩn Footer ở trang PayOS mock */}
       {!hideFooter && <Footer />}
     </div>
   );

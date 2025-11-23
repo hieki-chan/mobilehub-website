@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useCart from '../hooks/useCart'
 import CheckoutItems from '../components/checkout/CheckoutItems'
@@ -6,6 +6,7 @@ import AddressPopup from '../components/address/AddressPopup'
 import { formatPrice } from '../utils/formatPrice'
 import { getDefaultAddress } from "../api/addressApi"
 import { createOrder } from "../api/orderApi"
+import { createPaymentIntent } from "../api/paymentApi"  
 import '../styles/pages/checkout.css'
 import { getText } from 'number-to-text-vietnamese'
 import { useToast } from '../components/ToastProvider'
@@ -15,7 +16,7 @@ export default function Checkout() {
   const location = useLocation()
 
   const selectedItems = location.state?.selectedItems || []
-  const { cart: fullCart, clear } = useCart()
+  const { cart: fullCart } = useCart()
 
   const cart = fullCart.filter(item => selectedItems.includes(item.id))
 
@@ -25,8 +26,9 @@ export default function Checkout() {
   const [shippingMethod, setShippingMethod] = useState('standard')
   const [paymentMethod, setPaymentMethod] = useState('cod')
   const [note, setNote] = useState("")
-
   const [loading, setLoading] = useState(false)
+
+  const toast = useToast()
 
   useEffect(() => {
     if (!selectedItems.length) {
@@ -34,33 +36,36 @@ export default function Checkout() {
       return
     }
 
-    // Fetch địa chỉ mặc định
     const fetchDefault = async () => {
       try {
         const res = await getDefaultAddress()
         setSelectedAddress(res)
-      } catch (e) { }
+      } catch (e) {
+        console.error(e)
+      }
     }
     fetchDefault()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const shippingFee = shippingMethod === 'express' ? 50000 : 0
 
-  const subtotal = cart.reduce((sum, item) => {
-    const variant = item.variants?.find(v => v.id === item.variantId)
-    if (!variant) return sum
+  const subtotal = useMemo(() => (
+    cart.reduce((sum, item) => {
+      const variant = item.variants?.find(v => v.id === item.variantId)
+      if (!variant) return sum
 
-    const price = variant.price * (1 - (item.discountInPercent || 0) / 100)
-    return sum + price * item.quantity
-  }, 0)
+      const price = variant.price * (1 - (item.discountInPercent || 0) / 100)
+      return sum + price * item.quantity
+    }, 0)
+  ), [cart])
 
   const total = subtotal + shippingFee
-
   const roundedTotal = Math.round(total * 100) / 100
 
+  // ==== money -> words ====
   let totalInWords = ''
   const [intPart, decimalPart] = roundedTotal.toString().split('.')
-
   totalInWords = getText(parseInt(intPart))
 
   if (decimalPart && parseInt(decimalPart) > 0) {
@@ -74,35 +79,79 @@ export default function Checkout() {
   const totalInWordsFormatted =
     totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
 
-  const toast = useToast()
+  // ==== build order payload (single-responsibility) ====
+  const buildOrderPayload = () => ({
+    paymentMethod: paymentMethod.toUpperCase(),   // COD | BANK
+    shippingMethod: shippingMethod.toUpperCase(),// STANDARD | EXPRESS
+    note,
+    addressId: selectedAddress.id,
+    items: cart.map(item => ({
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: item.quantity
+    }))
+  })
+
   const handleSubmit = async () => {
     if (!selectedAddress) {
       toast.warning("Vui lòng chọn địa chỉ giao hàng")
       return
     }
 
-    const order = {
-      paymentMethod: paymentMethod.toUpperCase(),
-      shippingMethod: shippingMethod.toUpperCase(),
-      note: note,
-      addressId: selectedAddress.id,
-      items: cart.map(item => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity
-      }))
-    }
-
     try {
       setLoading(true)
-      await createOrder(order)
 
-      toast.success("Đặt hàng thành công!")
-      navigate("/")
+      // 1) Create order first
+      const orderPayload = buildOrderPayload()
+      const orderRes = await createOrder(orderPayload)
+
+      // detect orderCode/id defensively
+      const orderCode =
+        orderRes?.orderCode ??
+        orderRes?.id ??
+        orderRes?.data?.orderCode ??
+        orderRes?.data?.id
+
+      if (!orderCode) {
+        // still allow COD success, but online needs code
+        if (paymentMethod === "cod") {
+          toast.success("Đặt hàng thành công!")
+          navigate("/")
+          return
+        }
+        throw new Error("Missing orderCode from createOrder response")
+      }
+
+      // 2) COD => done
+      if (paymentMethod === "cod") {
+        toast.success("Đặt hàng thành công!")
+        navigate("/")
+        return
+      }
+
+      // 3) Online bank transfer => create payment intent
+      const amountVnd = Math.round(total) // VND integer
+
+      const intent = await createPaymentIntent({
+        orderCode,
+        amount: amountVnd,
+        currency: "VND",
+        captureMethod: "AUTOMATIC",
+        channel: "WEB",
+        returnUrl: `${window.location.origin}/checkout/return?orderCode=${orderCode}`,
+        provider: "PAYOS"
+      })
+
+      if (!intent?.paymentUrl) {
+        throw new Error("paymentUrl missing from payment-service")
+      }
+
+      // 4) Redirect to PayOS
+      window.location.href = intent.paymentUrl
 
     } catch (error) {
       console.error(error)
-      toast.error("Đặt hàng thất bại!")
+      toast.error("Đặt hàng / thanh toán thất bại!")
     } finally {
       setLoading(false)
     }
@@ -207,8 +256,8 @@ export default function Checkout() {
               type="radio"
               name="pay"
               value="bank"
-              checked={paymentMethod === 'bank'}
-              onChange={() => setPaymentMethod('bank')}
+              checked={paymentMethod === 'bank_transfer'}
+              onChange={() => setPaymentMethod('bank_transfer')}
             />
             <div className="pay-name">Chuyển khoản ngân hàng</div>
           </label>
