@@ -3,80 +3,35 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { getProductDetails } from '../api/productApi'
 import { formatPrice } from '../utils/formatPrice'
 import { getDefaultAddress } from '../api/addressApi'
+import { getPlans, precheckApplication, createApplication } from '../api/installmentApi'
+import { getVerificationStatus } from '../api/cccdVerifyApi'
+import CCCDVerificationForm from '../components/cccd_verification/CCCDVerificationForm'
 import '../styles/pages/installment.css'
-
-// --- MOCK DATA CÔNG TY TÀI CHÍNH ---
-// Mỗi công ty có quy định về trả trước (min-max) và kỳ hạn hỗ trợ
-const FINANCE_COMPANIES = [
-  {
-    id: 'home_credit',
-    name: 'Home Credit',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Home_Credit_logo.svg/2560px-Home_Credit_logo.svg.png',
-    interestRate: 0.018, // 1.8% / tháng
-    minPrepayPercent: 20,
-    maxPrepayPercent: 80,
-    supportedTerms: [6, 9, 12],
-    requirements: 'CMND/CCCD + Bằng lái xe',
-    approvalTime: '15 phút'
-  },
-  {
-    id: 'fe_credit',
-    name: 'FE Credit',
-    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/01/Logo-FE-Credit-Red-White-835x1024.png',
-    interestRate: 0.021, // 2.1% / tháng
-    minPrepayPercent: 0,
-    maxPrepayPercent: 70,
-    supportedTerms: [3, 6, 9, 12, 15, 18, 24],
-    requirements: 'CMND/CCCD + Hộ khẩu',
-    approvalTime: '30 phút'
-  },
-  {
-    id: 'mcredit',
-    name: 'MCredit',
-    logo: 'https://cdn.haitrieu.com/wp-content/uploads/2022/02/Logo-MCredit.png',
-    interestRate: 0.015, // 1.5% / tháng (ưu đãi)
-    minPrepayPercent: 30,
-    maxPrepayPercent: 90,
-    supportedTerms: [6, 12],
-    requirements: 'CMND/CCCD',
-    approvalTime: '5 phút (Duyệt Online)'
-  },
-  {
-    id: 'kredivo',
-    name: 'Kredivo',
-    logo: 'https://images.glints.com/unsafe/glints-dashboard.s3.amazonaws.com/company-logo/85434d850f42d817750d09c02e19130e.png',
-    interestRate: 0, // 0% lãi suất cho kỳ hạn ngắn
-    minPrepayPercent: 0,
-    maxPrepayPercent: 0, // Không cần trả trước
-    supportedTerms: [3], // Chỉ hỗ trợ 3 tháng
-    requirements: 'Tài khoản Kredivo',
-    approvalTime: 'Ngay lập tức'
-  }
-]
-
-// Các mốc trả trước & kỳ hạn để hiển thị trên UI
-const PREPAY_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-const TERM_OPTIONS = [3, 6, 9, 12, 15, 18, 24]
 
 export default function Installment() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const location = useLocation()
-  
+
   const productId = searchParams.get("productId")
-  // Lấy variantId từ state khi navigate từ trang ProductDetail, nếu không có thì null
   const initialVariantId = location.state?.variantId
 
   // --- STATE CHUNG ---
-  const [step, setStep] = useState(1) // 1: Chọn gói, 2: Thông tin
+  const [step, setStep] = useState(1)
   const [product, setProduct] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [plans, setPlans] = useState([])
+  const [cccdData, setCccdData] = useState({ status: false, cccdNo: '' })
+  const [showCCCDModal, setShowCCCDModal] = useState(false)
+  const [personalIncome, setPersonalIncome] = useState(0)
 
-  // --- STATE BƯỚC 1: CẤU HÌNH TRẢ GÓP ---
-  const [prepayPercent, setPrepayPercent] = useState(30) // Mặc định trả trước 30%
-  const [selectedTerm, setSelectedTerm] = useState(6)    // Mặc định 6 tháng
-  const [selectedCompany, setSelectedCompany] = useState(null) // Công ty user chọn để sang bước 2
+  // --- STATE BƯỚC 1 ---
+  const [selectedPlan, setSelectedPlan] = useState(null)
+
+  // --- FILTER STATE ---
+  const [filterDownPayment, setFilterDownPayment] = useState('all') // 'all' hoặc số %
+  const [filterTenor, setFilterTenor] = useState('all') // 'all' hoặc số tháng
 
   // --- STATE BƯỚC 2: THÔNG TIN ---
   const [userInfo, setUserInfo] = useState({
@@ -87,13 +42,45 @@ export default function Installment() {
     address: ''
   })
 
-  // Fetch sản phẩm
+  // Fetch plans và sản phẩm
   useEffect(() => {
     const load = async () => {
       try {
+        // Lấy danh sách plans
+        const plansData = await getPlans()
+        const activePlans = plansData.filter(p => p.active)
+        setPlans(activePlans)
+
+        // Kiểm tra trạng thái CCCD
+        try {
+          const cccdResponse = await getVerificationStatus()
+          // Response:
+          // { status, cccdNo, fullName, dateOfBirth, sex, placeOfResidence }
+
+          setCccdData({
+            status: cccdResponse.status || false,
+            cccdNo: cccdResponse.cccdNo || ''
+          })
+
+          // Nếu đã xác thực thì autofill tất cả thông tin
+          if (cccdResponse.status) {
+            setUserInfo(prev => ({
+              ...prev,
+              idCard: cccdResponse.cccdNo || '',
+              fullName: cccdResponse.fullName || prev.fullName,
+              dob: cccdResponse.dateOfBirth || prev.dob,
+              address: cccdResponse.placeOfResidence || prev.address
+            }))
+          }
+        } catch (err) {
+          console.error('Failed to get CCCD status:', err)
+          setCccdData({ status: false, cccdNo: '' })
+        }
+
+        // Lấy thông tin sản phẩm
         const data = await getProductDetails(productId)
         setProduct(data)
-        
+
         // Xác định variant đang chọn
         let variant = null
         if (initialVariantId) {
@@ -106,21 +93,24 @@ export default function Installment() {
 
         // Autofill user info nếu đã login
         const savedUser = JSON.parse(localStorage.getItem('user'))
-        if (savedUser) {
-          setUserInfo(prev => ({
-            ...prev,
-            fullName: savedUser.name || '',
-            phone: savedUser.phone || '',
-            address: savedUser.address || '' // Nếu user object có address
-          }))
-          // Nếu có API lấy địa chỉ mặc định, có thể gọi ở đây
-          try {
-             const defaultAddr = await getDefaultAddress()
-             if(defaultAddr) {
-               setUserInfo(prev => ({ ...prev, address: [defaultAddr.addressDetail, defaultAddr.ward, defaultAddr.district, defaultAddr.province].filter(Boolean).join(', ') }))
-             }
-          } catch {}
-        }
+        // if (savedUser) {
+        //   setUserInfo(prev => ({
+        //     ...prev,
+        //     fullName: savedUser.name || '',
+        //     phone: savedUser.phone || '',
+        //     address: savedUser.address || ''
+        //   }))
+        //   try {
+        //     const defaultAddr = await getDefaultAddress()
+        //     if (defaultAddr) {
+        //       setUserInfo(prev => ({
+        //         ...prev,
+        //         address: [defaultAddr.addressDetail, defaultAddr.ward, defaultAddr.district, defaultAddr.province]
+        //           .filter(Boolean).join(', ')
+        //       }))
+        //     }
+        //   } catch { }
+        // }
       } catch (err) {
         console.error(err)
       } finally {
@@ -131,59 +121,178 @@ export default function Installment() {
   }, [productId, initialVariantId])
 
   // Tính giá
-  const finalPrice = useMemo(() => {
-    if (!selectedVariant) return 0
+  const { originalPrice, finalPrice, hasDiscount } = useMemo(() => {
+    if (!selectedVariant) return { originalPrice: 0, finalPrice: 0, hasDiscount: false }
     const price = selectedVariant.price
-    const discount = product?.discountInPercent || 0
-    return Math.round(price * (1 - discount / 100))
+    const discount = product?.discount.valueInPercent || 0
+    return {
+      originalPrice: price,
+      finalPrice: Math.round(price * (1 - discount / 100)),
+      hasDiscount: discount > 0
+    }
   }, [selectedVariant, product])
 
-  // Lọc công ty phù hợp với cấu hình
-  const availableCompanies = useMemo(() => {
-    return FINANCE_COMPANIES.filter(company => {
-      // 1. Kiểm tra trả trước có nằm trong khoảng hỗ trợ không
-      if (prepayPercent < company.minPrepayPercent || prepayPercent > company.maxPrepayPercent) return false
-      // 2. Kiểm tra kỳ hạn có hỗ trợ không
-      if (!company.supportedTerms.includes(selectedTerm)) return false
-      return true
-    })
-  }, [prepayPercent, selectedTerm])
+  // Nhóm plans theo partner và hiển thị tất cả tenors
+  const groupedPlans = useMemo(() => {
+    return plans
+      .filter(plan => finalPrice >= plan.minPrice)
+      .flatMap(plan => {
+        const tenors = plan.allowedTenors?.split(',').map(t => parseInt(t.trim())) || []
+        return tenors.map(tenor => ({
+          ...plan,
+          tenor
+        }))
+      })
+      .filter(planItem => {
+        // Lọc theo downPayment nếu có chọn
+        if (filterDownPayment !== 'all' && planItem.downPaymentPercent !== parseInt(filterDownPayment)) {
+          return false
+        }
+        // Lọc theo tenor nếu có chọn
+        if (filterTenor !== 'all' && planItem.tenor !== parseInt(filterTenor)) {
+          return false
+        }
+        return true
+      })
+  }, [plans, finalPrice, filterDownPayment, filterTenor])
 
-  // Xử lý đặt mua ở Bước 1
-  const handleSelectPackage = (company) => {
-    setSelectedCompany(company)
+  // Lấy các giá trị unique để làm options cho dropdown
+  const availableDownPayments = useMemo(() => {
+    const payments = new Set()
+    plans.forEach(plan => payments.add(plan.downPaymentPercent))
+    return Array.from(payments).sort((a, b) => a - b)
+  }, [plans])
+
+  const availableTenors = useMemo(() => {
+    const tenors = new Set()
+    plans.forEach(plan => {
+      const tenorsList = plan.allowedTenors?.split(',').map(t => parseInt(t.trim())) || []
+      tenorsList.forEach(t => tenors.add(t))
+    })
+    return Array.from(tenors).sort((a, b) => a - b)
+  }, [plans])
+
+  // Hàm load lại trạng thái CCCD
+  const reloadCCCDStatus = async () => {
+    try {
+      const cccdResponse = await getVerificationStatus()
+
+      setCccdData({
+        status: cccdResponse.status || false,
+        cccdNo: cccdResponse.cccdNo || ''
+      })
+
+      if (cccdResponse.status) {
+        setUserInfo(prev => ({
+          ...prev,
+          idCard: cccdResponse.cccdNo || '',
+          fullName: cccdResponse.fullName || prev.fullName,
+          dob: cccdResponse.dateOfBirth || prev.dob,
+          address: cccdResponse.placeOfResidence || prev.address
+        }))
+
+      }
+    } catch (err) {
+      console.error('Failed to reload CCCD status:', err)
+    }
+  }
+
+  const handleSelectPackage = (plan) => {
+    setSelectedPlan(plan)
     setStep(2)
     window.scrollTo(0, 0)
   }
 
   // Xử lý submit ở Bước 2
-  const handleFinalSubmit = (e) => {
-    e.preventDefault()
-    if (!userInfo.fullName || !userInfo.phone || !userInfo.idCard || !userInfo.address) {
-      alert('Vui lòng điền đầy đủ thông tin!')
-      return
+  const handleFinalSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!cccdData.status) {
+      alert('Vui lòng xác thực CCCD trước khi đăng ký trả góp!');
+      setShowCCCDModal(true);
+      return;
     }
 
-    alert(`Đăng ký trả góp thành công!\nHồ sơ của bạn đang được ${selectedCompany.name} xét duyệt.\nChúng tôi sẽ liên hệ lại số ${userInfo.phone} trong ít phút.`)
-    navigate('/')
-  }
+    if (!userInfo.fullName || !userInfo.phone || !userInfo.address) {
+      alert('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
 
-  // Tính toán chi tiết tiền nong
-  const calculatePayment = (company) => {
-    const prepayAmount = Math.round(finalPrice * prepayPercent / 100)
+    const calc = calculatePayment(selectedPlan, selectedPlan.selectedTenor);
+
+    // BE yêu cầu loanAmount = finalPrice - trả trước
+    const payload = {
+      customerName: userInfo.fullName,
+      customerPhone: userInfo.phone,
+      productName: product.name,
+      productPrice: finalPrice,
+      loanAmount: calc.loanAmount,
+      tenorMonths: selectedPlan.selectedTenor,
+      planId: selectedPlan.id,
+      customerAge: userInfo.dob ? new Date().getFullYear() - new Date(userInfo.dob).getFullYear() : null,
+      monthlyIncome: Number(personalIncome) || 0
+    };
+
+    try {
+      const res = await precheckApplication(payload);
+      //console.log("Precheck response:", res);
+      if (!res.eligible) {
+        alert(res.message);
+        return;
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Bạn không đủ điều kiện để đặt trả góp!");
+      return;
+    }
+
+    try {
+      const res = await createApplication(payload);
+      alert("Đặt trả góp thành công!");
+      //console.log("installment:", res);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      alert("Đặt trả góp thất bại!");
+    }
+  };
+
+  // Tính toán chi tiết tiền
+  const calculatePayment = (plan, tenor) => {
+    const prepayAmount = Math.round(finalPrice * plan.downPaymentPercent / 100)
     const loanAmount = finalPrice - prepayAmount
-    
-    // Công thức đơn giản: (Gốc + Lãi) / Tháng
-    // Lãi tính trên dư nợ ban đầu (flat rate) để demo đơn giản
-    const totalInterest = loanAmount * company.interestRate * selectedTerm
-    const totalPay = loanAmount + totalInterest
-    const monthlyPay = Math.round(totalPay / selectedTerm)
-    const priceDiff = totalPay - loanAmount // Chênh lệch so với mua thẳng (chỉ tính phần vay)
 
-    return { prepayAmount, loanAmount, monthlyPay, totalPay, priceDiff }
+    const r = plan.interestRate / 100 // interestRate (%) -> per month
+    const n = tenor
+
+    let monthlyPay
+
+    if (r === 0) {
+      // 0% lãi
+      monthlyPay = Math.round(loanAmount / n)
+    } else {
+      // Annuity như BE
+      const factor = Math.pow(1 + r, n)
+      monthlyPay = Math.round(loanAmount * r * factor / (factor - 1))
+    }
+
+    const totalPay = monthlyPay * n
+    const priceDiff = totalPay - loanAmount
+
+    return {
+      prepayAmount,
+      loanAmount,
+      monthlyPay,
+      totalPay,
+      priceDiff,
+      months: n
+    }
   }
 
-  if (loading || !product || !selectedVariant) return <div className="loading-spinner">Đang tải...</div>
+  if (loading || !product || !selectedVariant) {
+    return <div className="loading-spinner">Đang tải...</div>
+  }
 
   // --- RENDER BƯỚC 1: CHỌN GÓI ---
   const renderStep1 = () => (
@@ -191,97 +300,154 @@ export default function Installment() {
       <div className="product-summary-header">
         <img src={selectedVariant.imageUrl} alt={product.name} />
         <div className="prod-info">
-            <h3>{product.name}</h3>
-            <div className="prod-variant">Phiên bản: {selectedVariant.storage_cap}GB - {selectedVariant.color_label}</div>
-            <div className="prod-price">
-                Giá bán: <span className="price-text">{formatPrice(finalPrice)}</span>
-            </div>
+          <h3>{product.name}</h3>
+          <div className="prod-variant">
+            Phiên bản: {selectedVariant.storage_cap}GB - {selectedVariant.color_label}
+          </div>
+          <div className="prod-price">
+            {hasDiscount && (
+              <span style={{
+                textDecoration: 'line-through',
+                color: '#9ca3af',
+                fontSize: '14px',
+                marginRight: '8px'
+              }}>
+                {formatPrice(originalPrice)}
+              </span>
+            )}
+            <span className="price-text">{formatPrice(finalPrice)}</span>
+            {hasDiscount && (
+              <span style={{
+                marginLeft: '8px',
+                padding: '2px 8px',
+                background: '#ef4444',
+                color: 'white',
+                fontSize: '12px',
+                borderRadius: '4px',
+                fontWeight: '600'
+              }}>
+                -{product.discount.valueInPercent}%
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="filter-controls">
-        <div className="control-group">
-            <label>Chọn mức trả trước ({prepayPercent}%)</label>
-            <div className="options-grid">
-                {PREPAY_OPTIONS.map(p => (
-                    <button 
-                        key={p} 
-                        className={`opt-btn ${prepayPercent === p ? 'active' : ''}`}
-                        onClick={() => setPrepayPercent(p)}
-                    >
-                        {p}%
-                    </button>
-                ))}
-            </div>
-            <div className="money-preview">
-                Số tiền trả trước: <strong>{formatPrice(Math.round(finalPrice * prepayPercent / 100))}</strong>
-            </div>
+        <div className="info-box">
+          <p>Chọn gói trả góp phù hợp với bạn. Tất cả các gói đều đã được duyệt và sẵn sàng áp dụng.</p>
         </div>
 
-        <div className="control-group">
-            <label>Chọn kỳ hạn (tháng)</label>
-            <div className="options-grid">
-                {TERM_OPTIONS.map(t => (
-                    <button 
-                        key={t} 
-                        className={`opt-btn ${selectedTerm === t ? 'active' : ''}`}
-                        onClick={() => setSelectedTerm(t)}
-                    >
-                        {t} tháng
-                    </button>
-                ))}
-            </div>
+        <div className="filter-dropdowns" style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Mức trả trước</label>
+            <select
+              value={filterDownPayment}
+              onChange={(e) => setFilterDownPayment(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">Tất cả</option>
+              {availableDownPayments.map(dp => (
+                <option key={dp} value={dp}>{dp}%</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Kỳ hạn</label>
+            <select
+              value={filterTenor}
+              onChange={(e) => setFilterTenor(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">Tất cả</option>
+              {availableTenors.map(t => (
+                <option key={t} value={t}>{t} tháng</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       <div className="companies-list">
-        <h3>Công ty tài chính hỗ trợ</h3>
-        {availableCompanies.length === 0 ? (
-             <div className="empty-result">
-                Không có công ty nào hỗ trợ mức trả trước {prepayPercent}% trong {selectedTerm} tháng. 
-                <br/>Vui lòng thử thay đổi mức trả trước hoặc kỳ hạn.
-             </div>
+        <h3>Gói trả góp khả dụng</h3>
+        {groupedPlans.length === 0 ? (
+          <div className="empty-result">
+            Không có gói trả góp nào phù hợp với sản phẩm này.
+            <br />Giá sản phẩm tối thiểu để áp dụng trả góp là 3.000.000đ.
+          </div>
         ) : (
-            <div className="company-grid">
-                {availableCompanies.map(comp => {
-                    const calc = calculatePayment(comp)
-                    return (
-                        <div key={comp.id} className="company-card">
-                            <div className="comp-header">
-                                <img src={comp.logo} alt={comp.name} className="comp-logo"/>
-                                <div className="comp-name">{comp.name}</div>
-                            </div>
-                            <div className="comp-body">
-                                <div className="row-info">
-                                    <span>Góp mỗi tháng</span>
-                                    <span className="highlight">{formatPrice(calc.monthlyPay)}</span>
-                                </div>
-                                <div className="row-info">
-                                    <span>Lãi suất thực/tháng</span>
-                                    <span>{comp.interestRate === 0 ? '0%' : `${(comp.interestRate * 100).toFixed(1)}%`}</span>
-                                </div>
-                                <div className="row-info">
-                                    <span>Tổng tiền phải trả</span>
-                                    <span>{formatPrice(calc.totalPay + calc.prepayAmount)}</span>
-                                </div>
-                                <div className="row-info">
-                                    <span>Chênh lệch giá</span>
-                                    <span>{formatPrice(calc.priceDiff)}</span>
-                                </div>
-                                <div className="requirements-box">
-                                    <i className="fa fa-id-card"></i> {comp.requirements}
-                                </div>
-                            </div>
-                            <div className="comp-footer">
-                                <button className="btn btn-primary btn-full" onClick={() => handleSelectPackage(comp)}>
-                                    ĐẶT MUA
-                                </button>
-                                <div className="approve-time">Duyệt hồ sơ: {comp.approvalTime}</div>
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
+          <div className="company-grid">
+            {groupedPlans.map((planItem, idx) => {
+              const calc = calculatePayment(planItem, planItem.tenor)
+              return (
+                <div key={`${planItem.id}-${planItem.tenor}-${idx}`} className="company-card">
+                  <div className="comp-header">
+                    <div className="comp-name">{planItem.partnerName}</div>
+                    <div className="comp-plan-name">{planItem.name}</div>
+                  </div>
+                  <div className="comp-body">
+                    <div className="row-info">
+                      <span>Mã gói</span>
+                      <span>{planItem.code}</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info">
+                      <span>Kỳ hạn</span>
+                      <span className="highlight">{planItem.tenor} tháng</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info">
+                      <span>Trả trước</span>
+                      <span>{planItem.downPaymentPercent}% ({formatPrice(calc.prepayAmount)})</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info">
+                      <span>Góp mỗi tháng</span>
+                      <span className="highlight">{formatPrice(calc.monthlyPay)}</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info">
+                      <span>Lãi suất/tháng</span>
+                      <span>{planItem.interestRate === 0 ? '0%' : `${planItem.interestRate}%`}</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info" style={{ fontWeight: '600', fontSize: '15px' }}>
+                      <span>Tổng tiền phải trả</span>
+                      <span className="highlight">{formatPrice(calc.totalPay + calc.prepayAmount)}</span>
+                    </div>
+                    <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                    <div className="row-info">
+                      <span>Chênh lệch giá</span>
+                      <span>{formatPrice(calc.priceDiff)}</span>
+                    </div>
+                  </div>
+                  <div className="comp-footer">
+                    <button
+                      className="btn btn-primary btn-full"
+                      onClick={() => handleSelectPackage({ ...planItem, selectedTenor: planItem.tenor })}
+                    >
+                      ĐẶT MUA
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>
@@ -289,132 +455,215 @@ export default function Installment() {
 
   // --- RENDER BƯỚC 2: ĐIỀN THÔNG TIN ---
   const renderStep2 = () => {
-    if (!selectedCompany) return null
-    const calc = calculatePayment(selectedCompany)
+    if (!selectedPlan) return null
+    const calc = calculatePayment(selectedPlan, selectedPlan.selectedTenor)
 
     return (
-        <div className="install-step-2 fade-in">
-            <button className="btn-back-step" onClick={() => setStep(1)}>
-                <i className="fa fa-arrow-left"></i> Quay lại chọn gói
-            </button>
+      <div className="install-step-2 fade-in">
+        <button className="btn-back-step" onClick={() => setStep(1)}>
+          <i className="fa fa-arrow-left"></i> Quay lại chọn gói
+        </button>
 
-            <div className="layout-2-col">
-                {/* Form Trái: Thông tin khách hàng */}
-                <div className="form-section">
-                    <h3>Thông tin người mua</h3>
-                    <form onSubmit={handleFinalSubmit}>
-                        <div className="form-group">
-                            <label>Họ và tên *</label>
-                            <input 
-                                required
-                                value={userInfo.fullName} 
-                                onChange={e => setUserInfo({...userInfo, fullName: e.target.value})}
-                                placeholder="Nguyễn Văn A"
-                            />
-                        </div>
-                        <div className="row-2">
-                            <div className="form-group">
-                                <label>Số điện thoại *</label>
-                                <input 
-                                    required
-                                    type="tel"
-                                    value={userInfo.phone} 
-                                    onChange={e => setUserInfo({...userInfo, phone: e.target.value})}
-                                    placeholder="0912xxxxxx"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Ngày sinh</label>
-                                <input 
-                                    type="date"
-                                    value={userInfo.dob} 
-                                    onChange={e => setUserInfo({...userInfo, dob: e.target.value})}
-                                />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label>Số CMND/CCCD *</label>
-                            <input 
-                                required
-                                value={userInfo.idCard} 
-                                onChange={e => setUserInfo({...userInfo, idCard: e.target.value})}
-                                placeholder="12 số căn cước"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Địa chỉ nhận hàng / hộ khẩu *</label>
-                            <textarea 
-                                required
-                                rows="3"
-                                value={userInfo.address} 
-                                onChange={e => setUserInfo({...userInfo, address: e.target.value})}
-                                placeholder="Số nhà, đường, phường/xã..."
-                            ></textarea>
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-xl btn-full" style={{marginTop: 20}}>
-                            GỬI HỒ SƠ TRẢ GÓP
-                        </button>
-                        <p className="term-note">Bằng cách ấn vào nút gửi hồ sơ, bạn đồng ý với các điều khoản của {selectedCompany.name} và MobileHub.</p>
-                    </form>
+        <div className="layout-2-col">
+          <div className="form-section">
+            <h3>Thông tin người mua</h3>
+            <form onSubmit={handleFinalSubmit}>
+              <div className="form-group">
+                <label>Họ và tên *</label>
+                <input
+                  required
+                  value={userInfo.fullName}
+                  onChange={e => setUserInfo({ ...userInfo, fullName: e.target.value })}
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+              <div className="row-2">
+                <div className="form-group">
+                  <label>Số điện thoại *</label>
+                  <input
+                    required
+                    type="tel"
+                    value={userInfo.phone}
+                    onChange={e => setUserInfo({ ...userInfo, phone: e.target.value })}
+                    placeholder="0912xxxxxx"
+                  />
                 </div>
+                <div className="form-group">
+                  <label>Ngày sinh</label>
+                  <input
+                    type="date"
+                    value={userInfo.dob}
+                    onChange={e => setUserInfo({ ...userInfo, dob: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Số CMND/CCCD *</label>
+                {cccdData.status ? (
+                  // Đã xác thực: hiện input disabled với số CCCD
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                      required
+                      style={{ flex: 1 }}
+                      value={cccdData.cccdNo}
+                      disabled
+                      placeholder="12 số căn cước"
+                    />
+                    <span style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      whiteSpace: 'nowrap',
+                      background: '#dcfce7',
+                      color: '#166534'
+                    }}>
+                      ✅ Đã xác thực
+                    </span>
+                  </div>
+                ) : (
+                  // Chưa xác thực: hiện button xác thực
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => setShowCCCDModal(true)}
+                      style={{ width: '100%', padding: '12px' }}
+                    >
+                      <i className="fa fa-id-card"></i> Xác thực CCCD để tiếp tục
+                    </button>
+                    <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '8px', marginBottom: 0 }}>
+                      ❌ Bạn cần xác thực CCCD để đăng ký trả góp
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
+                <label>Địa chỉ nhận hàng / hộ khẩu *</label>
+                <textarea
+                  required
+                  rows="3"
+                  value={userInfo.address}
+                  onChange={e => setUserInfo({ ...userInfo, address: e.target.value })}
+                  placeholder="Số nhà, đường, phường/xã..."
+                ></textarea>
+              </div>
+              <div className="form-group">
+                <label>Thu nhập cá nhân</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={personalIncome}
+                  min={0}
+                  onChange={(e) => setPersonalIncome(e.target.value)}
+                  placeholder="Nhập thu nhập cá nhân"
+                />
+              </div>
 
-                {/* Cột Phải: Tóm tắt gói */}
-                <div className="summary-section">
-                    <div className="summary-card">
-                        <div className="sum-header">
-                            <img src={product.imageUrl || selectedVariant.imageUrl} alt="" width="60"/>
-                            <div>
-                                <h4>{product.name}</h4>
-                                <div className="v-name">{selectedVariant.storage_cap}GB - {selectedVariant.color_label}</div>
-                            </div>
-                        </div>
-                        <div className="divider"></div>
-                        <div className="sum-row">
-                            <span>Giá sản phẩm:</span>
-                            <b>{formatPrice(finalPrice)}</b>
-                        </div>
-                        <div className="sum-row">
-                            <span>Đơn vị tài chính:</span>
-                            <b>{selectedCompany.name}</b>
-                        </div>
-                        <div className="sum-row">
-                            <span>Kỳ hạn:</span>
-                            <b>{selectedTerm} tháng</b>
-                        </div>
-                        <div className="sum-row">
-                            <span>Trả trước ({prepayPercent}%):</span>
-                            <b>{formatPrice(calc.prepayAmount)}</b>
-                        </div>
-                         <div className="sum-row">
-                            <span>Góp mỗi tháng:</span>
-                            <b className="highlight">{formatPrice(calc.monthlyPay)}</b>
-                        </div>
-                        <div className="sum-row">
-                            <span>Tổng tiền góp:</span>
-                            <span className="muted">{formatPrice(calc.totalPay)}</span>
-                        </div>
-                        <div className="sum-row">
-                            <span>Chênh lệch:</span>
-                            <span className="muted">{formatPrice(calc.priceDiff)}</span>
-                        </div>
-                    </div>
+              <button type="submit" className="btn btn-primary btn-xl btn-full" style={{ marginTop: 20 }}>
+                GỬI HỒ SƠ TRẢ GÓP
+              </button>
+              <p className="term-note">
+                Bằng cách ấn vào nút gửi hồ sơ, bạn đồng ý với các điều khoản của {selectedPlan.partnerName} và MobileHub.
+              </p>
+            </form>
+          </div>
+
+          <div className="summary-section">
+            <div className="summary-card">
+              <div className="sum-header">
+                <img src={product.imageUrl || selectedVariant.imageUrl} alt="" width="60" />
+                <div>
+                  <h4>{product.name}</h4>
+                  <div className="v-name">{selectedVariant.storage_cap}GB - {selectedVariant.color_label}</div>
                 </div>
+              </div>
+              <div className="divider"></div>
+              {hasDiscount && (
+                <>
+                  <div className="sum-row">
+                    <span>Giá gốc:</span>
+                    <span style={{ textDecoration: 'line-through', color: '#9ca3af' }}>
+                      {formatPrice(originalPrice)}
+                    </span>
+                  </div>
+                  <div className="sum-row">
+                    <span>Giảm giá:</span>
+                    <span style={{ color: '#ef4444', fontWeight: '600' }}>
+                      -{product.discount.valueInPercent}%
+                    </span>
+                  </div>
+                </>
+              )}
+              <div className="sum-row">
+                <span>Giá sản phẩm:</span>
+                <b style={{ color: '#ef4444', fontWeight: '600' }}>{formatPrice(finalPrice)}</b>
+              </div>
+              <div className="sum-row">
+                <span>Gói trả góp:</span>
+                <b>{selectedPlan.name}</b>
+              </div>
+              <div className="sum-row">
+                <span>Đơn vị tài chính:</span>
+                <b>{selectedPlan.partnerName}</b>
+              </div>
+              <div className="sum-row">
+                <span>Kỳ hạn:</span>
+                <b>{selectedPlan.selectedTenor} tháng</b>
+              </div>
+              <div className="sum-row">
+                <span>Lãi suất:</span>
+                <b>{selectedPlan.interestRate === 0 ? '0%' : `${selectedPlan.interestRate}%`}/tháng</b>
+              </div>
+              <div className="sum-row">
+                <span>Trả trước ({selectedPlan.downPaymentPercent}%):</span>
+                <b>{formatPrice(calc.prepayAmount)}</b>
+              </div>
+              <div className="sum-row">
+                <span>Góp mỗi tháng:</span>
+                <span className="highlight">{formatPrice(calc.monthlyPay)}</span>
+              </div>
+              <div className="sum-row">
+                <span>Tổng tiền góp:</span>
+                <b className="highlight">{formatPrice(calc.totalPay + calc.prepayAmount)}</b>
+              </div>
+              <div className="sum-row">
+                <span>Chênh lệch:</span>
+                <span className="muted">{formatPrice(calc.priceDiff)}</span>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     )
   }
 
   return (
     <main className="installment-page">
-        <div className="container">
-            <div className="stepper">
-                <div className={`step-item ${step >= 1 ? 'active' : ''}`}>1. Chọn gói trả góp</div>
-                <div className="step-line"></div>
-                <div className={`step-item ${step >= 2 ? 'active' : ''}`}>2. Thông tin hồ sơ</div>
-            </div>
-            
-            {step === 1 ? renderStep1() : renderStep2()}
+      {showCCCDModal && (
+        <CCCDVerificationForm
+          onClose={() => setShowCCCDModal(false)}
+          onSuccess={async () => {
+            // Callback khi xác thực thành công
+            setShowCCCDModal(false)
+
+            // Load lại trạng thái CCCD từ API
+            await reloadCCCDStatus()
+
+            alert('Xác thực CCCD thành công!')
+          }}
+        />
+      )}
+
+      <div className="container">
+        <div className="stepper">
+          <div className={`step-item ${step >= 1 ? 'active' : ''}`}>1. Chọn gói trả góp</div>
+          <div className="step-line"></div>
+          <div className={`step-item ${step >= 2 ? 'active' : ''}`}>2. Thông tin hồ sơ</div>
         </div>
+
+        {step === 1 ? renderStep1() : renderStep2()}
+      </div>
     </main>
   )
 }
