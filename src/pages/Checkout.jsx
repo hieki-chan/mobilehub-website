@@ -6,7 +6,7 @@ import AddressPopup from '../components/address/AddressPopup'
 import { formatPrice } from '../utils/formatPrice'
 import { getDefaultAddress } from "../api/addressApi"
 import { createOrder } from "../api/orderApi"
-import { createPaymentIntent } from "../api/paymentApi"  
+import { createPaymentIntent } from "../api/paymentApi"
 import '../styles/pages/checkout.css'
 import { getText } from 'number-to-text-vietnamese'
 import { useToast } from '../components/ToastProvider'
@@ -24,7 +24,8 @@ export default function Checkout() {
   const [showAddressPopup, setShowAddressPopup] = useState(false)
 
   const [shippingMethod, setShippingMethod] = useState('standard')
-  const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [paymentMethod, setPaymentMethod] = useState('cod') // 'cod' | 'bank_transfer'
+
   const [note, setNote] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -79,12 +80,12 @@ export default function Checkout() {
   const totalInWordsFormatted =
     totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
 
-  // ==== build order payload (single-responsibility) ====
+  // ==== build order payload ====
   const buildOrderPayload = () => ({
-    paymentMethod: paymentMethod.toUpperCase(),   // COD | BANK
-    shippingMethod: shippingMethod.toUpperCase(),// STANDARD | EXPRESS
+    paymentMethod: paymentMethod.toUpperCase(),    // COD | BANK_TRANSFER
+    shippingMethod: shippingMethod.toUpperCase(), // STANDARD | EXPRESS
     note,
-    addressId: selectedAddress.id,
+    addressId: selectedAddress?.id,
     items: cart.map(item => ({
       productId: item.productId,
       variantId: item.variantId,
@@ -98,6 +99,12 @@ export default function Checkout() {
       return
     }
 
+    if (!cart.length) {
+      toast.warning("Giỏ hàng trống hoặc sản phẩm đã bị xoá")
+      navigate('/cart')
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -105,49 +112,52 @@ export default function Checkout() {
       const orderPayload = buildOrderPayload()
       const orderRes = await createOrder(orderPayload)
 
-      // detect orderCode/id defensively
-      const orderCode =
-        orderRes?.orderCode ??
+      // ✅ tách 2 mã
+      const orderId =
         orderRes?.id ??
-        orderRes?.data?.orderCode ??
         orderRes?.data?.id
 
-      if (!orderCode) {
-        // still allow COD success, but online needs code
-        if (paymentMethod === "cod") {
-          toast.success("Đặt hàng thành công!")
-          navigate("/")
-          return
-        }
-        throw new Error("Missing orderCode from createOrder response")
-      }
+      const paymentCode =
+        orderRes?.paymentCode ??
+        orderRes?.data?.paymentCode ??
+        // fallback cho contract cũ nếu có
+        orderRes?.orderCode ??
+        orderRes?.data?.orderCode
 
       // 2) COD => done
       if (paymentMethod === "cod") {
+        // TODO: nếu useCart có clear/removeMany thì gọi ở đây để xoá item đã mua
         toast.success("Đặt hàng thành công!")
         navigate("/")
         return
       }
 
-      // 3) Online bank transfer => create payment intent
-      const amountVnd = Math.round(total) // VND integer
+      // bank_transfer bắt buộc phải có paymentCode
+      if (!orderId || !paymentCode) {
+        throw new Error("Missing orderId/paymentCode from createOrder response")
+      }
+
+      // 3) bank_transfer => PayOS create intent
+      const amountVnd = Math.round(roundedTotal) // VND integer, dùng roundedTotal cho chắc
+
+      const origin = window.location.origin
 
       const intent = await createPaymentIntent({
-        orderCode,
+        orderId,                // nội bộ (để payment commit inventory)
+        orderCode: paymentCode, // mã PayOS
         amount: amountVnd,
-        currency: "VND",
-        captureMethod: "AUTOMATIC",
-        channel: "WEB",
-        returnUrl: `${window.location.origin}/checkout/return?orderCode=${orderCode}`,
-        provider: "PAYOS"
+        returnUrl: `${origin}/checkout/return?orderCode=${paymentCode}`,
+        cancelUrl: `${origin}/checkout/cancel?orderCode=${paymentCode}`,
+        description: `Thanh toan don ${paymentCode}`
       })
 
-      if (!intent?.paymentUrl) {
-        throw new Error("paymentUrl missing from payment-service")
+      const paymentUrl = intent?.paymentUrl || intent?.checkoutUrl
+      if (!paymentUrl) {
+        throw new Error("paymentUrl/checkoutUrl missing from payment-service")
       }
 
       // 4) Redirect to PayOS
-      window.location.href = intent.paymentUrl
+      window.location.href = paymentUrl
 
     } catch (error) {
       console.error(error)
@@ -255,11 +265,11 @@ export default function Checkout() {
             <input
               type="radio"
               name="pay"
-              value="bank"
+              value="bank_transfer"
               checked={paymentMethod === 'bank_transfer'}
               onChange={() => setPaymentMethod('bank_transfer')}
             />
-            <div className="pay-name">Chuyển khoản ngân hàng</div>
+            <div className="pay-name">Chuyển khoản ngân hàng (PayOS)</div>
           </label>
         </div>
 

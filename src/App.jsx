@@ -15,9 +15,10 @@ import ShopeeCart from "./pages/OrderHistory";
 import SearchResults from "./pages/SearchResults";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
+import CheckoutReturn from "./pages/CheckoutReturn";   // ✅ return
+import CheckoutCancel from "./pages/CheckoutCancel";   // ✅ cancel (thêm vào)
 import Installment from "./pages/Installment";
 import NotFound from "./pages/NotFound";
-import PayOSCheckout from "./pages/PayOSCheckout";
 import { verifyToken, logout } from "./api/authApi";
 
 export default function App() {
@@ -25,22 +26,19 @@ export default function App() {
   const [retryCount, setRetryCount] = useState(0);
 
   const location = useLocation();
+  const currentPath = location.pathname;
 
   // Những path cần ẩn FOOTER (như bạn đang làm)
   const hideFooterPaths = ["/product/", "/cart", "/search"];
 
-  // ✅ Những path cần ẩn CẢ HEADER + FOOTER
-  const hideLayoutPaths = ["/mock/payos/checkout"];
+  // ✅ Những path PayOS cần ẩn cả header + footer
+  const hideLayoutPaths = ["/checkout/return", "/checkout/cancel"];
 
-  const currentPath = location.pathname;
+  const hideHeader = hideLayoutPaths.some((p) => currentPath.startsWith(p));
 
   const hideFooter =
     hideFooterPaths.some((p) => currentPath.startsWith(p)) ||
     hideLayoutPaths.some((p) => currentPath.startsWith(p));
-
-  const hideHeader = hideLayoutPaths.some((p) =>
-    currentPath.startsWith(p)
-  );
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -83,7 +81,6 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* ✅ Ẩn Header ở trang PayOS mock */}
       {!hideHeader && <Header />}
 
       <div style={{ flex: 1 }}>
@@ -103,15 +100,15 @@ export default function App() {
           {/* FORM THANH TOÁN */}
           <Route path="/checkout" element={<Checkout />} />
 
-          {/* MOCK PAYOS UI */}
-          <Route path="/mock/payos/checkout" element={<PayOSCheckout />} />
+          {/* ✅ PAYOS RETURN/CANCEL PAGES */}
+          <Route path="/checkout/return" element={<CheckoutReturn />} />
+          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
 
           <Route path="/installment" element={<Installment />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
 
-      {/* ✅ Ẩn Footer ở trang PayOS mock */}
       {!hideFooter && <Footer />}
     </div>
   );

@@ -1,0 +1,71 @@
+.checkout-return-wrap {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #f7f7fb;
+  }
+  
+  .checkout-return-card {
+    width: 100%;
+    max-width: 520px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    padding: 28px;
+    text-align: center;
+  }
+  
+  .cr-icon {
+    font-size: 48px;
+    margin-bottom: 8px;
+  }
+  
+  .cr-icon.success { color: #16a34a; }
+  .cr-icon.fail { color: #dc2626; }
+  .cr-icon.cancel { color: #f59e0b; }
+  
+  .spin {
+    display: inline-block;
+    animation: spin 1.2s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .cr-meta {
+    margin-top: 16px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 14px;
+    color: #333;
+    display: grid;
+    gap: 6px;
+  }
+  
+  .cr-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .cr-btn {
+    background: #111827;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .cr-btn-outline {
+    background: transparent;
+    color: #111827;
+    border: 1px solid #111827;
+  }
+  
