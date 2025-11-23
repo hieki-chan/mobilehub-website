@@ -5,6 +5,7 @@ import { formatPrice } from '../utils/formatPrice'
 import CartItem from '../components/cart/CartItem'
 import '../styles/pages/cart.css'
 import { getText } from 'number-to-text-vietnamese'
+import { useToast } from '../components/ToastProvider'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -36,10 +37,10 @@ export default function Cart() {
     }, 0)
 
   const cartTotal = Math.round(selectedTotal * 100) / 100
-
+    const toast = useToast()
   function checkout() {
     if (selectedItems.length === 0) {
-      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán')
+      toast.warning('Vui lòng chọn ít nhất một sản phẩm để thanh toán')
       return
     }
     navigate('/checkout', { state: { selectedItems } })

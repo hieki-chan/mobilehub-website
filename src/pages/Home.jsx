@@ -5,6 +5,7 @@ import QuickViewModal from "../components/home/QuickViewModal";
 import { formatPrice } from "../utils/formatPrice";
 import { fetchProducts } from "../api/productApi";
 import "../styles/pages/home.css";
+import { useToast } from "../components/ToastProvider";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -55,9 +56,10 @@ export default function Home() {
     }
   };
 
+  const toast = useToast()
   const openQuickView = (id) => {
     const p = products.find((x) => String(x.id) === String(id));
-    if (!p) return alert("Không tìm thấy sản phẩm");
+    if (!p) return toast.error("Không tìm thấy sản phẩm");
     setModalProduct(p);
     //console.log(p);
     setModalOpen(true);
@@ -75,8 +77,8 @@ export default function Home() {
   };
 
   const popularTerms = [
-    "Vphone Pro 6",
-    "Vphone X",
+    "Iphone 6s plus",
+    "Iphone X",
     "iPhone 17",
     "Samsung S25",
     "Pixel 9",

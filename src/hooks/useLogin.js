@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/authApi";
+import { useToast } from '../components/ToastProvider'
 
 export default function useLogin() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useToast();
 
   const handleLogin = async ({ email, password, remember = true }) => {
     setError("");
@@ -20,18 +22,24 @@ export default function useLogin() {
       localStorage.setItem("token", data.accessToken);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      toast.success("Đăng nhập thành công!");
+
       navigate("/");
       window.dispatchEvent(new Event("user-changed"));
     } catch (err) {
+      let msg = "";
       if (!err.response)
-        setError("Không thể kết nối đến máy chủ. Kiểm tra mạng hoặc thử lại sau.");
+        msg = "Không thể kết nối đến máy chủ. Kiểm tra mạng hoặc thử lại sau.";
       else if (err.response.status === 401)
-        setError("Sai email hoặc mật khẩu!");
+        msg = "Sai email hoặc mật khẩu!";
       else if (err.response.status === 403)
-        setError("Tài khoản này không có quyền truy cập.");
+        msg = "Tài khoản này không có quyền truy cập.";
       else if (err.response.status >= 500)
-        setError("Lỗi máy chủ. Vui lòng thử lại sau.");
-      else setError("Đăng nhập thất bại. Vui lòng thử lại.");
+        msg = "Lỗi máy chủ. Vui lòng thử lại sau.";
+      else msg = "Đăng nhập thất bại. Vui lòng thử lại.";
+
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { getPlans, precheckApplication, createApplication } from '../api/install
 import { getVerificationStatus } from '../api/cccdVerifyApi'
 import CCCDVerificationForm from '../components/cccd_verification/CCCDVerificationForm'
 import '../styles/pages/installment.css'
+import { useToast } from '../components/ToastProvider'
 
 export default function Installment() {
   const navigate = useNavigate()
@@ -205,17 +206,20 @@ export default function Installment() {
 
   // Xử lý submit ở Bước 2
   const handleFinalSubmit = async (e) => {
-    e.preventDefault();
+    const toast = useToast()
+    const handleFinalSubmit = (e) => {
+      e.preventDefault();
 
-    if (!cccdData.status) {
-      alert('Vui lòng xác thực CCCD trước khi đăng ký trả góp!');
-      setShowCCCDModal(true);
-      return;
-    }
+      if (!cccdData.status) {
+        alert('Vui lòng xác thực CCCD trước khi đăng ký trả góp!');
+        setShowCCCDModal(true);
+        return;
+      }
 
-    if (!userInfo.fullName || !userInfo.phone || !userInfo.address) {
-      alert('Vui lòng điền đầy đủ thông tin!');
-      return;
+      if (!userInfo.fullName || !userInfo.phone || !userInfo.address) {
+        alert('Vui lòng điền đầy đủ thông tin!');
+        return;
+      }
     }
 
     const calc = calculatePayment(selectedPlan, selectedPlan.selectedTenor);

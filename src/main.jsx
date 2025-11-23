@@ -18,11 +18,14 @@ import './styles/components/skeleton.css'
 import './styles/components/tags.css'
 
 import './styles/pages/home.css'
+import { ToastProvider } from './components/ToastProvider'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>
 )

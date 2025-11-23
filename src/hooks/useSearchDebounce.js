@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { searchProductsByName } from '../api/productApi'
 
-export function useSearchDebounce(query, products, delay = 300) {
+export function useSearchDebounce(query, delay = 300) {
   const [suggestions, setSuggestions] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const timerRef = useRef(null)
@@ -18,21 +19,32 @@ export function useSearchDebounce(query, products, delay = 300) {
 
     setIsSearching(true)
 
-    timerRef.current = setTimeout(() => {
-      const term = query.trim().toLowerCase()
+    timerRef.current = setTimeout(async () => {
+      const term = query.trim()
       
-      if (!Array.isArray(products) || products.length === 0) {
+      try {
+        // Gọi API tìm kiếm theo tên
+        const data = await searchProductsByName({ name: term, limit: 6 })
+        
+        if (Array.isArray(data)) {
+          // Map dữ liệu từ API (có nested defaultVariant) sang cấu trúc phẳng cho UI hiển thị
+          const mappedResults = data.map(product => ({
+            id: product.id,
+            name: product.name,
+            // Ưu tiên lấy giá và ảnh từ biến thể mặc định
+            price: product.defaultVariant?.price || product.price,
+            image: product.defaultVariant?.imageUrl || product.image || (product.images && product.images[0]) || '/no-image.png'
+          }))
+          setSuggestions(mappedResults)
+        } else {
+          setSuggestions([])
+        }
+      } catch (error) {
+        console.error("Lỗi tìm kiếm:", error)
         setSuggestions([])
+      } finally {
         setIsSearching(false)
-        return
       }
-
-      const results = products
-        .filter(p => p?.name?.toLowerCase().includes(term))
-        .slice(0, 6)
-
-      setSuggestions(results)
-      setIsSearching(false)
     }, delay)
 
     return () => {
@@ -40,7 +52,7 @@ export function useSearchDebounce(query, products, delay = 300) {
         clearTimeout(timerRef.current)
       }
     }
-  }, [query, products, delay])
+  }, [query, delay])
 
   return { suggestions, isSearching }
 }

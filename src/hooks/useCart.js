@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { CartApi } from '../api/cartApi'
 
+// Tên event để đồng bộ
+const CART_EVENT = 'cart-updated'
+
 export default function useCart() {
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(false)
@@ -9,17 +12,21 @@ export default function useCart() {
 
   const fetchCart = async () => {
     if (!userId) return
-    setLoading(true)
+    // setLoading(true) // Tắt loading ở đây để tránh nháy khi auto-refresh ngầm
     try {
       const res = await CartApi.getCart(userId)
       const items = res?.items || []
       setCart(items)
-      //console.log(items);
     } catch (err) {
       setError(err?.message || 'Lỗi khi tải giỏ hàng')
     } finally {
-      setLoading(false)
+      // setLoading(false)
     }
+  }
+
+  // Helper dispatch event
+  const notifyCartChange = () => {
+    window.dispatchEvent(new Event(CART_EVENT))
   }
 
   const add = async (item, quantity = 1) => {
@@ -29,7 +36,7 @@ export default function useCart() {
       const res = await CartApi.addItem(userId, item)
       const items = res?.result?.items || []
       setCart(items)
-      //console.log(cart);
+      notifyCartChange() // Báo cho Header cập nhật
     } finally {
       setLoading(false)
     }
@@ -41,6 +48,7 @@ export default function useCart() {
     try {
       await CartApi.removeItem(userId, item.id)
       setCart(prev => prev.filter(i => i.id !== item.id))
+      notifyCartChange() // Báo cho Header cập nhật
     } finally {
       setLoading(false)
     }
@@ -48,11 +56,9 @@ export default function useCart() {
 
   const updateQty = async (item, qty) => {
     if (!userId) return
-    //setLoading(true)
     try {
       const res = await CartApi.updateItemQuantity(userId, item.id, qty);
       const { quantity } = res || {}
-      //console.log(quantity)
 
       if (quantity !== undefined) {
         setCart(prev =>
@@ -60,10 +66,9 @@ export default function useCart() {
             i.id === item.id ? { ...i, quantity: quantity } : i
           )
         )
+        notifyCartChange() // Báo cho Header cập nhật
       }
-    } finally {
-      //setLoading(false)
-    }
+    } finally { }
   }
 
   const updateVariant = async (item, variantId) => {
@@ -73,6 +78,7 @@ export default function useCart() {
       setCart(prev =>
         prev.map(i => i.id === item.id ? { ...i, variantId: updated.variantId } : i)
       );
+      notifyCartChange() // Báo cho Header cập nhật
     } finally { }
   };
 
@@ -82,26 +88,32 @@ export default function useCart() {
     try {
       await CartApi.clearCart(userId)
       setCart([])
+      notifyCartChange() // Báo cho Header cập nhật
     } finally {
       setLoading(false)
     }
   }
 
   const count = () => cart.reduce((sum, i) => sum + (i.quantity || 1), 0)
+  
   const total = () => cart.reduce((sum, item) => {
     const variant = item.variants?.find(v => v.id === item.variantId);
     if (!variant) return sum;
-
     const price = variant.price || 0;
-
     const finalPrice = price * (1 - (item.discountInPercent || 0) / 100);
-
     return sum + finalPrice * (item.quantity || 1);
   }, 0);
 
-
   useEffect(() => {
     fetchCart()
+
+    // Lắng nghe sự kiện thay đổi giỏ hàng từ các component khác
+    const handleCartUpdate = () => fetchCart()
+    window.addEventListener(CART_EVENT, handleCartUpdate)
+
+    return () => {
+      window.removeEventListener(CART_EVENT, handleCartUpdate)
+    }
   }, [userId])
 
   return { cart, add, remove, updateQty, updateVariant, clear, count, total, loading, error }
