@@ -96,25 +96,27 @@ export default function SearchResults() {
   }
 
   useEffect(() => {
-    fetchProducts(0)
-  }, [q, size, priceRange, brands, discountOnly, sortBy])
+    fetchProducts(page)
+  }, [q, size, priceRange, brands, discountOnly, sortBy, page])
 
   // --- Handlers ---
   const handlePriceChange = (value) => {
     setPriceRange(value)
     updateParams({ priceRange: value, page: 0 })
-    fetchProducts(0)
+    // XÓA: fetchProducts(0) -> useEffect sẽ tự chạy khi priceRange thay đổi
   }
 
   const handleSortChange = (value) => {
     setSortBy(value)
     updateParams({ sortBy: value, page: 0 })
-    fetchProducts(0)
+    // XÓA: fetchProducts(0) -> useEffect sẽ tự chạy khi sortBy thay đổi
   }
 
   const handlePageChange = (newPage) => {
+    setPage(newPage) // Cập nhật state page
     updateParams({ page: newPage })
-    fetchProducts(newPage)
+    // XÓA: fetchProducts(newPage) 
+    // Lưu ý: Bạn cần đảm bảo 'page' đã được thêm vào dependency array của useEffect ở dưới
   }
 
   const handleResetFilters = () => {
@@ -122,8 +124,9 @@ export default function SearchResults() {
     setSortBy('default')
     setBrands([])
     setDiscountOnly(false)
+    setPage(0) // Reset về trang 0
     updateParams({ priceRange: 'all', sortBy: 'default', brands: [], discountOnly: false, page: 0 })
-    fetchProducts(0)
+    // XÓA: fetchProducts(0)
   }
   const toast = useToast()
   const openQuickView = (id) => {
