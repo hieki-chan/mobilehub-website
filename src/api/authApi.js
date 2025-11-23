@@ -172,6 +172,23 @@ export const uploadAvatar = async (file) => {
   }
 }
 
+export const loginWithGoogle = async (idToken) => {
+  try {
+    const res = await api.post(`${API_BASE_URL}/google`, { idToken });
+    const data = res.data;
+
+    localStorage.setItem("token", data.accessToken);
+    localStorage.setItem("role", data.user.role);
+    localStorage.setItem("email", data.user.email);
+    localStorage.setItem("isLoggedIn", "true");
+
+    return data;
+  } catch (err) {
+    console.error("Google login failed:", err);
+    throw err;
+  }
+};
+
 export const logout = () => {
   clearAccountData();
 };

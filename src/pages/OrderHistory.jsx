@@ -20,6 +20,12 @@ export default function OrderHistory() {
   const [reviewingItem, setReviewingItem] = useState(null);
   const [userRatings, setUserRatings] = useState({});
 
+  const paymentMethodText = {
+    COD: "Thanh toán khi nhận hàng",
+    BANK_TRANSFER: "Chuyển khoản ngân hàng",
+    INSTALLMENT: "Trả góp",
+  };
+
   const toast = useToast()
   // Load orders
   useEffect(() => {
@@ -191,7 +197,7 @@ export default function OrderHistory() {
                   Địa chỉ: {order.shippingAddress}
                 </p>
                 <p className="order-payment-method">
-                  Phương thức thanh toán: {order.paymentMethod}
+                  Phương thức thanh toán: {paymentMethodText[order.paymentMethod] || order.paymentMethod}
                 </p>
               </div>
 

@@ -3,7 +3,7 @@ import { verifyCCCD } from '../../api/cccdVerifyApi';
 import './cccd-verification.css';
 import { useToast } from '../ToastProvider';
 
-export default function CCCDVerificationForm({ onClose }) {
+export default function CCCDVerificationForm({ onClose, onSuccess }) {
   // State quản lý ảnh
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
@@ -58,6 +58,7 @@ export default function CCCDVerificationForm({ onClose }) {
       await verifyCCCD(frontFile, backFile);
       
       toast.success('Gửi xác thực thành công! Hệ thống đang xử lý.');
+      onSuccess();
       onClose(); // Đóng modal
     } catch (error) {
       console.error(error);

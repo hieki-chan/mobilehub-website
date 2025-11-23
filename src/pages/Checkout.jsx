@@ -6,7 +6,7 @@ import AddressPopup from '../components/address/AddressPopup'
 import { formatPrice } from '../utils/formatPrice'
 import { getDefaultAddress } from "../api/addressApi"
 import { createOrder } from "../api/orderApi"
-import { createPaymentIntent } from "../api/paymentApi"  
+import { createPaymentIntent } from "../api/paymentApi"
 import '../styles/pages/checkout.css'
 import { getText } from 'number-to-text-vietnamese'
 import { useToast } from '../components/ToastProvider'
@@ -103,35 +103,38 @@ export default function Checkout() {
 
       // 1) Create order first
       const orderPayload = buildOrderPayload()
-      const orderRes = await createOrder(orderPayload)
 
-      // detect orderCode/id defensively
-      const orderCode =
-        orderRes?.orderCode ??
-        orderRes?.id ??
-        orderRes?.data?.orderCode ??
-        orderRes?.data?.id
+      if (orderPayload.paymentMethod === "COD") {
+        const orderRes = await createOrder(orderPayload)
 
-      if (!orderCode) {
-        // still allow COD success, but online needs code
+        // detect orderCode/id defensively
+        const orderCode =
+          orderRes?.orderCode ??
+          orderRes?.id ??
+          orderRes?.data?.orderCode ??
+          orderRes?.data?.id
+
+        if (!orderCode) {
+          // still allow COD success, but online needs code
+          if (paymentMethod === "cod") {
+            toast.success("Đặt hàng thành công!")
+            navigate("/")
+            return
+          }
+          throw new Error("Missing orderCode from createOrder response")
+        }
+
+        // 2) COD => done
         if (paymentMethod === "cod") {
           toast.success("Đặt hàng thành công!")
           navigate("/")
           return
         }
-        throw new Error("Missing orderCode from createOrder response")
-      }
-
-      // 2) COD => done
-      if (paymentMethod === "cod") {
-        toast.success("Đặt hàng thành công!")
-        navigate("/")
-        return
       }
 
       // 3) Online bank transfer => create payment intent
       const amountVnd = Math.round(total) // VND integer
-
+      const orderCode = 1;
       const intent = await createPaymentIntent({
         orderCode,
         amount: amountVnd,
