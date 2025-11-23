@@ -61,7 +61,7 @@ export default function Home() {
     const p = products.find((x) => String(x.id) === String(id));
     if (!p) return toast.error("Không tìm thấy sản phẩm");
     setModalProduct(p);
-    console.log(p);
+    //console.log(p);
     setModalOpen(true);
     document.body.style.overflow = "hidden";
   };
@@ -198,6 +198,7 @@ export default function Home() {
                   price: p.defaultVariant.price,
                   imageUrl: p.defaultVariant.imageUrl,
                   discountInPercent: p.discountInPercent,
+                  sold: p.sold
                 }}
                 onQuickView={openQuickView}
               />

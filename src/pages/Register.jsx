@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import GoogleLogin from '../components/GoogleLogin'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 import '../styles/pages/login.css'
 import { register } from "../api/authApi"
 
@@ -125,7 +125,7 @@ export default function Register() {
 
           <div className="divider">Hoặc đăng ký bằng</div>
 
-          <GoogleLogin clientId="REPLACE_WITH_GOOGLE_CLIENT_ID" onSuccess={() => { }} />
+          <GoogleLoginButton />
 
           <p className="register">
             Bạn đã có tài khoản?{" "}

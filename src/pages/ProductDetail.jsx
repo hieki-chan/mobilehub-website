@@ -127,7 +127,7 @@ export default function ProductDetail() {
 
         <div className="rating">
           <div id="stars" style={{color: '#facc15'}}>★★★★★</div>
-          <div className="muted" id="reviewCount">(4.9 · Đã bán 2.1k)</div>
+          <div className="muted" id="reviewCount">(4.9 · Đã bán {p.sold})</div>
         </div>
 
         {/* --- PHẦN HIỂN THỊ GIÁ (Đã sửa) --- */}

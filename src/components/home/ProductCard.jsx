@@ -51,7 +51,7 @@ export default function ProductCard({ p, onQuickView }) {
         <div className="bonus">Quà {formatPrice(1000000)}</div>
 
         <div className="rating">
-          <i className="fa fa-star"></i> 4.9 <span>· Đã bán 2.1k</span>
+          <i className="fa fa-star"></i> 4.9 <span>· Đã bán {p.sold}</span>
         </div>
 
         <div className="btn-wrap">

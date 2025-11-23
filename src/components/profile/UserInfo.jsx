@@ -216,8 +216,8 @@ export default function UserInfo() {
 
           <div className="form-group">
             <label>Số CCCD</label>
-            <span className={`cccd-status ${cccdVerified ? 'verified' : 'unverified'}`}>
-              {cccdVerified ? 'Đã xác thực ✅' : 'Chưa xác thực ❌'}
+            <span className={`cccd-status ${cccdVerified.status ? 'verified' : 'unverified'}`}>
+              {cccdVerified.status ? 'Đã xác thực ✅' : 'Chưa xác thực ❌'}
             </span>
             <button
               type="button"

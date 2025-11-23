@@ -58,7 +58,7 @@ export default function QuickViewModal({ product, onClose }) {
             <div className="qv-sub">RAM 16 GB · SSD 512 GB</div>
 
             <div className="qv-rating">
-              <i className="fa fa-star"></i> 4.9 · Đã bán 2.1k
+              <i className="fa fa-star"></i> 4.9 · Đã bán {product.sold}
             </div>
 
             <div className="qv-price">
@@ -78,8 +78,7 @@ export default function QuickViewModal({ product, onClose }) {
             <div className="qv-bonus">🎁 Quà tặng trị giá 1.000.000₫</div>
 
             <p className="qv-desc">
-              {product.description ||
-                "Thiết bị sở hữu hiệu năng mạnh mẽ, thiết kế sang trọng và camera chất lượng cao. Hoàn hảo cho mọi nhu cầu từ làm việc đến giải trí."}
+              {product.description}
             </p>
 
             <div className="qv-actions">
