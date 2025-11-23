@@ -14,6 +14,7 @@ import '../styles/pages/product-detail.css'
 import { getProductDetails } from '../api/productApi'
 import { getGroupedSpecs } from '../data/products'
 import { useToast } from '../components/ToastProvider'
+import Breadcrumbs from '../components/Breadcrumbs';
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -126,6 +127,9 @@ export default function ProductDetail() {
 
   return (
     <main className="pdp-container" id="mainContent">
+      <div style={{ gridColumn: '1 / -1', width: '100%' }}>
+        <Breadcrumbs customLast={p.name} />
+      </div>
       <ProductGallery images={galleryImages} />
 
       <aside className="pdp-info">

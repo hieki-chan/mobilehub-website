@@ -207,19 +207,17 @@ export default function Installment() {
   // Xử lý submit ở Bước 2
   const handleFinalSubmit = async (e) => {
     const toast = useToast()
-    const handleFinalSubmit = (e) => {
-      e.preventDefault();
+    e.preventDefault();
 
-      if (!cccdData.status) {
-        alert('Vui lòng xác thực CCCD trước khi đăng ký trả góp!');
-        setShowCCCDModal(true);
-        return;
-      }
+    if (!cccdData.status) {
+      alert('Vui lòng xác thực CCCD trước khi đăng ký trả góp!');
+      setShowCCCDModal(true);
+      return;
+    }
 
-      if (!userInfo.fullName || !userInfo.phone || !userInfo.address) {
-        alert('Vui lòng điền đầy đủ thông tin!');
-        return;
-      }
+    if (!userInfo.fullName || !userInfo.phone || !userInfo.address) {
+      alert('Vui lòng điền đầy đủ thông tin!');
+      return;
     }
 
     const calc = calculatePayment(selectedPlan, selectedPlan.selectedTenor);
@@ -654,7 +652,7 @@ export default function Installment() {
             // Load lại trạng thái CCCD từ API
             await reloadCCCDStatus()
 
-            alert('Xác thực CCCD thành công!')
+            //alert('Xác thực CCCD thành công!')
           }}
         />
       )}

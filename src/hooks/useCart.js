@@ -46,6 +46,7 @@ export default function useCart() {
     if (!userId) return
     setLoading(true)
     try {
+      console.log("remove")
       await CartApi.removeItem(userId, item.id)
       setCart(prev => prev.filter(i => i.id !== item.id))
       notifyCartChange() // Báo cho Header cập nhật

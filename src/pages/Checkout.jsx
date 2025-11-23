@@ -110,7 +110,9 @@ export default function Checkout() {
 
       // 1) Create order first
       const orderPayload = buildOrderPayload()
-      const orderRes = await createOrder(orderPayload)
+
+      if (orderPayload.paymentMethod === "COD") {
+        const orderRes = await createOrder(orderPayload)
 
       // ✅ tách 2 mã
       const orderId =
