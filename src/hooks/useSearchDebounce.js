@@ -23,16 +23,25 @@ export function useSearchDebounce(query, delay = 300) {
       const term = query.trim()
       
       try {
-        // Gọi API tìm kiếm theo tên
         const data = await searchProductsByName({ name: term, limit: 6 })
         
+        // --- SỬA ĐOẠN NÀY: Xử lý linh hoạt cấu trúc trả về từ API ---
+        let resultsArray = []
         if (Array.isArray(data)) {
-          // Map dữ liệu từ API (có nested defaultVariant) sang cấu trúc phẳng cho UI hiển thị
-          const mappedResults = data.map(product => ({
+          resultsArray = data
+        } else if (data && Array.isArray(data.content)) {
+          resultsArray = data.content
+        } else if (data && Array.isArray(data.result)) {
+          resultsArray = data.result
+        }
+        // -----------------------------------------------------------
+
+        if (resultsArray.length > 0) {
+          const mappedResults = resultsArray.map(product => ({
             id: product.id,
             name: product.name,
-            // Ưu tiên lấy giá và ảnh từ biến thể mặc định
-            price: product.defaultVariant?.price || product.price,
+            // Fallback an toàn để tránh lỗi null
+            price: product.defaultVariant?.price || product.price || 0,
             image: product.defaultVariant?.imageUrl || product.image || (product.images && product.images[0]) || '/no-image.png'
           }))
           setSuggestions(mappedResults)
