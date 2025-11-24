@@ -15,8 +15,8 @@ import ShopeeCart from "./pages/OrderHistory";
 import SearchResults from "./pages/SearchResults";
 import Profile from "./pages/Profile";
 import Checkout from "./pages/Checkout";
-import CheckoutReturn from "./pages/CheckoutReturn";   // ✅ return
-import CheckoutCancel from "./pages/CheckoutCancel";   // ✅ cancel (thêm vào)
+import CheckoutReturn from "./pages/CheckoutReturn";  
+import CheckoutCancel from "./pages/CheckoutCancel";   
 import Installment from "./pages/Installment";
 import NotFound from "./pages/NotFound";
 import { verifyToken, logout } from "./api/authApi";
@@ -55,20 +55,25 @@ export default function App() {
       for (let i = 1; i <= maxRetries; i++) {
         try {
           const valid = await verifyToken(token);
-
+      
           if (!valid) {
             logout();
             setIsChecking(false);
             return;
           }
-
+      
           setIsChecking(false);
           return;
         } catch (error) {
           setRetryCount(i);
-          await new Promise((res) => setTimeout(res, 1000));
+      
+          // Delay 1 giây trước khi retry
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000)
+          );
         }
       }
+      
 
       logout();
       setIsChecking(false);

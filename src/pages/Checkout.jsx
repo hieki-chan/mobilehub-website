@@ -1,89 +1,88 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import useCart from '../hooks/useCart'
-import CheckoutItems from '../components/checkout/CheckoutItems'
-import AddressPopup from '../components/address/AddressPopup'
-import { formatPrice } from '../utils/formatPrice'
-import { getDefaultAddress } from "../api/addressApi"
-import { createOrder } from "../api/orderApi"
-import { createPaymentIntent } from "../api/paymentApi"
-import '../styles/pages/checkout.css'
-import { getText } from 'number-to-text-vietnamese'
-import { useToast } from '../components/ToastProvider'
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useCart from '../hooks/useCart';
+import CheckoutItems from '../components/checkout/CheckoutItems';
+import AddressPopup from '../components/address/AddressPopup';
+import { formatPrice } from '../utils/formatPrice';
+import { getDefaultAddress } from "../api/addressApi";
+import { createOrder } from "../api/orderApi";
+import { createPaymentIntent } from "../api/paymentApi";
+import '../styles/pages/checkout.css';
+import { getText } from 'number-to-text-vietnamese';
+import { useToast } from '../components/ToastProvider';
 
 export default function Checkout() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const selectedItems = location.state?.selectedItems || []
-  const { cart: fullCart } = useCart()
+  const selectedItems = location.state?.selectedItems || [];
+  const { cart: fullCart } = useCart();
 
-  const cart = fullCart.filter(item => selectedItems.includes(item.id))
+  const cart = fullCart.filter(item => selectedItems.includes(item.id));
 
-  const [selectedAddress, setSelectedAddress] = useState(null)
-  const [showAddressPopup, setShowAddressPopup] = useState(false)
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [showAddressPopup, setShowAddressPopup] = useState(false);
 
-  const [shippingMethod, setShippingMethod] = useState('standard')
-  const [paymentMethod, setPaymentMethod] = useState('cod') // 'cod' | 'bank_transfer'
+  const [shippingMethod, setShippingMethod] = useState('standard');
+  const [paymentMethod, setPaymentMethod] = useState('cod'); // cod | bank_transfer
 
-  const [note, setNote] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const toast = useToast()
+  const toast = useToast();
 
   useEffect(() => {
     if (!selectedItems.length) {
-      navigate('/cart')
-      return
+      navigate('/cart');
+      return;
     }
 
     const fetchDefault = async () => {
       try {
-        const res = await getDefaultAddress()
-        setSelectedAddress(res)
+        const res = await getDefaultAddress();
+        setSelectedAddress(res);
       } catch (e) {
-        console.error(e)
+        console.error(e);
       }
-    }
-    fetchDefault()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    };
+    fetchDefault();
+  }, []);
 
-  const shippingFee = shippingMethod === 'express' ? 50000 : 0
+  const shippingFee = shippingMethod === 'express' ? 50000 : 0;
 
   const subtotal = useMemo(() => (
     cart.reduce((sum, item) => {
-      const variant = item.variants?.find(v => v.id === item.variantId)
-      if (!variant) return sum
+      const variant = item.variants?.find(v => v.id === item.variantId);
+      if (!variant) return sum;
 
-      const price = variant.price * (1 - (item.discountInPercent || 0) / 100)
-      return sum + price * item.quantity
+      const price = variant.price * (1 - (item.discountInPercent || 0) / 100);
+      return sum + price * item.quantity;
     }, 0)
-  ), [cart])
+  ), [cart]);
 
-  const total = subtotal + shippingFee
-  const roundedTotal = Math.round(total * 100) / 100
+  const total = subtotal + shippingFee;
+  const roundedTotal = Math.round(total * 100) / 100;
 
-  // ==== money -> words ====
-  let totalInWords = ''
-  const [intPart, decimalPart] = roundedTotal.toString().split('.')
-  totalInWords = getText(parseInt(intPart))
+  // ==== total to words ====
+  let totalInWords = '';
+  const [intPart, decimalPart] = roundedTotal.toString().split('.');
+  totalInWords = getText(parseInt(intPart));
 
   if (decimalPart && parseInt(decimalPart) > 0) {
     const decimalText = decimalPart
       .split('')
       .map((d) => getText(parseInt(d)))
-      .join(' ')
-    totalInWords += ' phẩy ' + decimalText
+      .join(' ');
+    totalInWords += ' phẩy ' + decimalText;
   }
 
   const totalInWordsFormatted =
-    totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1)
+    totalInWords.charAt(0).toUpperCase() + totalInWords.slice(1);
 
-  // ==== build order payload ====
+  // ==== build payload ====
   const buildOrderPayload = () => ({
-    paymentMethod: paymentMethod.toUpperCase(),    // COD | BANK_TRANSFER
-    shippingMethod: shippingMethod.toUpperCase(), // STANDARD | EXPRESS
+    paymentMethod: paymentMethod.toUpperCase(),
+    shippingMethod: shippingMethod.toUpperCase(),
     note,
     addressId: selectedAddress?.id,
     items: cart.map(item => ({
@@ -91,83 +90,75 @@ export default function Checkout() {
       variantId: item.variantId,
       quantity: item.quantity
     }))
-  })
+  });
 
+  // ===========================
+  //         SUBMIT ORDER
+  // ===========================
   const handleSubmit = async () => {
     if (!selectedAddress) {
-      toast.warning("Vui lòng chọn địa chỉ giao hàng")
-      return
+      toast.warning('Vui lòng chọn địa chỉ giao hàng');
+      return;
     }
 
     if (!cart.length) {
-      toast.warning("Giỏ hàng trống hoặc sản phẩm đã bị xoá")
-      navigate('/cart')
-      return
+      toast.warning('Giỏ hàng trống hoặc sản phẩm đã bị xoá');
+      navigate('/cart');
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
-      // 1) Create order first
-      const orderPayload = buildOrderPayload()
+      const orderPayload = buildOrderPayload();
 
-      if (orderPayload.paymentMethod === "COD") {
-        const orderRes = await createOrder(orderPayload)
+      // 1) Tạo order (cho cả COD + BANK_TRANSFER)
+      const orderRes = await createOrder(orderPayload);
 
-      // ✅ tách 2 mã
-      const orderId =
-        orderRes?.id ??
-        orderRes?.data?.id
-
+      const orderId = orderRes?.id ?? orderRes?.data?.id;
       const paymentCode =
         orderRes?.paymentCode ??
         orderRes?.data?.paymentCode ??
-        // fallback cho contract cũ nếu có
         orderRes?.orderCode ??
-        orderRes?.data?.orderCode
+        orderRes?.data?.orderCode;
 
-      // 2) COD => done
-      if (paymentMethod === "cod") {
-        // TODO: nếu useCart có clear/removeMany thì gọi ở đây để xoá item đã mua
-        toast.success("Đặt hàng thành công!")
-        navigate("/")
-        return
-      }
-
-      // bank_transfer bắt buộc phải có paymentCode
       if (!orderId || !paymentCode) {
-        throw new Error("Missing orderId/paymentCode from createOrder response")
+        throw new Error("Missing orderId/paymentCode");
       }
 
-      // 3) bank_transfer => PayOS create intent
-      const amountVnd = Math.round(roundedTotal) // VND integer, dùng roundedTotal cho chắc
+      // 2) COD → hoàn tất ngay
+      if (paymentMethod === "cod") {
+        toast.success('Đặt hàng thành công!');
+        navigate('/');
+        return;
+      }
 
-      const origin = window.location.origin
+      // 3) BANK_TRANSFER → tạo PayOS intent
+      const amountVnd = Math.round(roundedTotal);
+      const origin = window.location.origin;
 
       const intent = await createPaymentIntent({
-        orderId,                // nội bộ (để payment commit inventory)
-        orderCode: paymentCode, // mã PayOS
+        orderId,
+        orderCode: paymentCode,
         amount: amountVnd,
         returnUrl: `${origin}/checkout/return?orderCode=${paymentCode}`,
         cancelUrl: `${origin}/checkout/cancel?orderCode=${paymentCode}`,
         description: `Thanh toan don ${paymentCode}`
-      })
+      });
 
-      const paymentUrl = intent?.paymentUrl || intent?.checkoutUrl
-      if (!paymentUrl) {
-        throw new Error("paymentUrl/checkoutUrl missing from payment-service")
-      }
+      const paymentUrl = intent?.paymentUrl || intent?.checkoutUrl;
+      if (!paymentUrl) throw new Error("Missing paymentUrl");
 
       // 4) Redirect to PayOS
-      window.location.href = paymentUrl
+      window.location.href = paymentUrl;
 
-    } catch (error) {
-      console.error(error)
-      toast.error("Đặt hàng / thanh toán thất bại!")
+    } catch (err) {
+      console.error(err);
+      toast.error("Đặt hàng / thanh toán thất bại!");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <main className="checkout-wrap">
@@ -176,8 +167,8 @@ export default function Checkout() {
           selectedId={selectedAddress?.id}
           onClose={() => setShowAddressPopup(false)}
           onSelect={(addr) => {
-            setSelectedAddress(addr)
-            setShowAddressPopup(false)
+            setSelectedAddress(addr);
+            setShowAddressPopup(false);
           }}
         />
       )}
@@ -316,5 +307,5 @@ export default function Checkout() {
         </button>
       </div>
     </main>
-  )
+  );
 }
