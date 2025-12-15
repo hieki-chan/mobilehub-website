@@ -263,13 +263,13 @@ export default function Header() {
               onMouseLeave={handleMegaMenuLeave} // Giữ nguyên hover + delay
             >
               <div className="nav-item-wrapper">
-                <Link to="/search?q=Điện thoại" className="nav-item">
+                <Link to="/search?q=Iphone" className="nav-item">
                   <i className="fa fa-mobile-screen-button"></i>
-                  <span>Điện thoại</span>
-                  <i className="fa fa-chevron-down" style={{ fontSize: 10, marginLeft: 4 }}></i>
+                  <span>Iphone</span>
+                  {/* <i className="fa fa-chevron-down" style={{ fontSize: 10, marginLeft: 4 }}></i> */}
                 </Link>
 
-                {megaMenuOpen && (
+                {/* {megaMenuOpen && (
                   <div
                     className="mega-menu"
                     onMouseEnter={handleMegaMenuEnter} // Giữ nguyên hover + delay
@@ -290,15 +290,15 @@ export default function Header() {
                       </div>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
             </li>
 
-            <li><Link to="/search?q=Tablet" className="nav-item"><i className="fa fa-tablet"></i><span>Tablet</span></Link></li>
-            <li><Link to="/search?q=Phụ kiện" className="nav-item"><i className="fa fa-headphones"></i><span>Phụ kiện</span></Link></li>
-            <li><Link to="/search?q=Sạc Pin" className="nav-item"><i className="fa fa-bolt"></i><span>Sạc &amp; Pin</span></Link></li>
-            <li><Link to="/search?q=Khuyến mãi" className="nav-item"><i className="fa fa-tags"></i><span>Khuyến mãi</span></Link></li>
-            <li><Link to="/search?q=Dịch vụ" className="nav-item"><i className="fa fa-cog"></i><span>Dịch vụ</span></Link></li>
+            <li><Link to="/search?q=Samsung" className="nav-item"><i className="fa fa-tablet"></i><span>Samsung</span></Link></li>
+            <li><Link to="/search?q=Oppo" className="nav-item"><i className="fa fa-headphones"></i><span>Oppo</span></Link></li>
+            <li><Link to="/search?q=Xiaomi" className="nav-item"><i className="fa fa-bolt"></i><span>Xiaomi</span></Link></li>
+            <li><Link to="/search?q=Vivo" className="nav-item"><i className="fa fa-tags"></i><span>Vivo</span></Link></li>
+            <li><Link to="/search?q=Realme" className="nav-item"><i className="fa fa-cog"></i><span>Realme</span></Link></li>
           </ul>
         </div>
       </nav>

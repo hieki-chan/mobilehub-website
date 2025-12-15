@@ -29,30 +29,28 @@ export default function ProductCard({ p, onQuickView }) {
             e.currentTarget.src = "/no-image.png";
           }}
         />
-        {hasDiscount && (
-          <span className="badge sale">-{p.discountInPercent}%</span>
-        )}
+        
       </div>
 
       <div className="product-info">
         <h4 className="product-title">{p.name}</h4>
 
-        <div className="product-sub">
+        {/* <div className="product-sub">
           <span>RAM {p.defaultVariant?.ram || 0} GB</span> · <span>SSD {p.defaultVariant?.storage_cap || 0} GB</span> 
-        </div>
+        </div> */}
 
         <div className="price-row">
           <div className="price-final">{formatPrice(finalPrice)}</div>
-          {hasDiscount && (
+          {/* {hasDiscount && (
             <div className="price-old">{formatPrice(p.price)}</div>
-          )}
+          )} */}
         </div>
 
-        <div className="bonus">Quà {formatPrice(1000000)}</div>
+        {/* <div className="bonus">Quà {formatPrice(1000000)}</div> */}
 
-        <div className="rating">
+        {/* <div className="rating">
           <i className="fa fa-star"></i> 4.9 <span>· Đã bán {p.sold}</span>
-        </div>
+        </div> */}
 
         <div className="btn-wrap">
           <button
